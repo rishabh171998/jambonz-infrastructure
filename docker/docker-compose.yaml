@@ -22,6 +22,13 @@ x-common-variables: &common-variables
   # so we set it explicitly on the containers that need it
   DRACHTIO_PORT: 9022
   DRACHTIO_SECRET: cymru
+  # OpenTelemetry/Jaeger tracing configuration
+  JAMBONES_OTEL_ENABLED: 1
+  OTEL_EXPORTER_JAEGER_ENDPOINT: 'http://jaeger:14268/api/traces'
+  OTEL_EXPORTER_OTLP_METRICS_INSECURE: 1
+  OTEL_EXPORTER_JAEGER_GRPC_INSECURE: 1
+  OTEL_TRACES_SAMPLER: 'parentbased_traceidratio'
+  OTEL_TRACES_SAMPLER_ARG: 1.0
 
 
 networks:
@@ -101,6 +108,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      jaeger:
+        condition: service_started
     networks:
       jambonz:
         ipv4_address: 172.10.0.30
@@ -114,8 +123,10 @@ services:
       - "3001:3001"
     environment:
       API_BASE_URL: http://${HOST_IP}:3000/v1
+      DISABLE_JAEGER_TRACING: "false"
     depends_on:
       - api-server
+      - jaeger
 
   registrar:
     image: jambonz/sbc-registrar:latest
@@ -238,6 +249,7 @@ services:
     depends_on:
       - mysql
       - redis
+      - jaeger
       - sbc-inbound
       - sbc-outbound
       - api-server
@@ -254,3 +266,17 @@ services:
     networks:
       jambonz:
         ipv4_address: 172.10.0.61
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    restart: always
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # HTTP collector
+      - "6831:6831/udp"  # UDP agent
+      - "6832:6832/udp"  # UDP agent
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
+    networks:
+      jambonz:
+        ipv4_address: 172.10.0.62
