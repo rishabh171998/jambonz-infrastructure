@@ -1,5 +1,3 @@
-version: "3.9"
-
 # common env var settings
 # not all containers use all of these env vars, but they are common
 # enough it's much simpler to track them in one place
@@ -63,12 +61,14 @@ services:
   drachtio-sbc:
     image: drachtio/drachtio-server:latest
     restart: always
-    command: ["drachtio", "--contact", "sip:${HOST_IP};transport=udp,tcp",  "--external-ip",  "${HOST_IP}", "--address", "0.0.0.0", "--port", "9022", "--disable-nat-detection"]
+    entrypoint: ["/bin/bash", "/etc/drachtio/drachtio-entrypoint.sh"]
     volumes:
       - ./sbc/drachtio.conf.xml:/etc/drachtio.conf.xml
+      - ./sbc/drachtio-entrypoint.sh:/etc/drachtio/drachtio-entrypoint.sh:ro
     ports:
       - "5060:5060/udp"
       - "5060:5060/tcp"
+      - "5061:5061/tcp"
     depends_on:
       - rtpengine
     networks:
