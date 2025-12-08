@@ -103,6 +103,7 @@ services:
     environment:
       <<: *common-variables
       HTTP_PORT: 3000
+      JAEGER_BASE_URL: 'http://jaeger:16686'
     depends_on:
       mysql:
         condition: service_healthy
