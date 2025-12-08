@@ -8,22 +8,30 @@ set -e
 # Get the public IP (try multiple methods)
 if [ -z "$HOST_IP" ]; then
   # Try AWS metadata service first
-  if curl -s --max-time 2 http://169.254.169.254/latest/meta-data/public-ipv4 > /dev/null 2>&1; then
-    PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-  # Try GCP metadata service
-  elif curl -s --max-time 2 -H "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip > /dev/null 2>&1; then
-    PUBLIC_IP=$(curl -s -H "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
-  # Fallback to external service
-  else
-    PUBLIC_IP=$(curl -s --max-time 5 http://ipecho.net/plain || curl -s --max-time 5 http://ifconfig.me || curl -s --max-time 5 http://icanhazip.com)
+  PUBLIC_IP=$(curl -s --max-time 5 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null)
+  
+  # If AWS metadata didn't work, try external services
+  if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" = "" ]; then
+    PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null)
+  fi
+  
+  # Try another external service
+  if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" = "" ]; then
+    PUBLIC_IP=$(curl -s --max-time 5 https://ifconfig.me 2>/dev/null)
+  fi
+  
+  # Try one more
+  if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" = "" ]; then
+    PUBLIC_IP=$(curl -s --max-time 5 http://icanhazip.com 2>/dev/null)
   fi
 else
   PUBLIC_IP="$HOST_IP"
 fi
 
-if [ -z "$PUBLIC_IP" ]; then
+if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" = "" ]; then
   echo "ERROR: Could not determine public IP address"
-  echo "Please set HOST_IP environment variable: export HOST_IP=your.public.ip"
+  echo "Please set HOST_IP environment variable: export HOST_IP=13.203.223.245"
+  echo "Or run: HOST_IP=13.203.223.245 ./update-sbc-ip.sh"
   exit 1
 fi
 
