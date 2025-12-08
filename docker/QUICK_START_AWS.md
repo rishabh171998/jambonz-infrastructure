@@ -131,6 +131,21 @@ cd /opt/jambonz-infrastructure/docker
 
 Share this with your carriers so they can whitelist it.
 
+### SIP Realm Domain (Account Level)
+**What is it?** Domain that SIP devices register to (e.g., `sip.yourcompany.com`). Stored per account.
+
+**✅ To Do:**
+- Set in webapp: Accounts → Create/Edit → SIP realm field
+- Use domain name (not IP): `sip.yourcompany.com` or `account1` (becomes `account1.sip.jambonz.cloud`)
+- Configure DNS if using custom domain: `sip.yourcompany.com A → 13.203.223.245`
+
+**❌ Not To Do:**
+- Don't use IP address as SIP realm
+- Don't use same SIP realm for multiple accounts
+- Don't forget DNS for custom domains
+
+**Note:** SIP Realm (account level) is different from SIP Signaling IP (system level). SIP IP is for carriers, SIP Realm is for device registration.
+
 ### Elastic IP (Recommended)
 Your current public IP (13.203.223.245) will change if you stop/restart the instance. For production:
 
@@ -231,10 +246,12 @@ docker compose exec redis redis-cli
 1. ✅ Configure security group (if not done)
 2. ✅ Add TTS/STT credentials (GCP or AWS)
 3. ✅ Log into webapp and change password
-4. ✅ Create your account and applications
-5. ✅ Configure SIP carriers
-6. ✅ Share SIP IP (13.203.223.245:5060) with carriers
-7. ✅ Test with a softphone or SIP device
+4. ✅ Create account and set SIP realm domain (account level)
+5. ✅ Create applications
+6. ✅ Configure SIP carriers
+7. ✅ Share SIP IP (13.203.223.245:5060) with carriers
+8. ✅ Configure DNS for SIP realm (if using custom domain)
+9. ✅ Test with a softphone or SIP device
 
 ## Support
 

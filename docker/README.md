@@ -58,6 +58,20 @@ docker-compose -f docker-compose.yaml down
 
 Once you have provisioned the system, you should be able to point sip devices to register and send INVITEs to port 5060 on host ip address that you configured above and have that traffic routed to your jambonz system.
 
+## SIP Realm Configuration (Account Level)
+
+**What is SIP Realm?** The domain that SIP devices register to (e.g., `sip.yourcompany.com`). Stored per account in `accounts.sip_realm`.
+
+**Configuration:**
+- Set in webapp: **Accounts → Create/Edit Account → SIP realm field**
+- Use domain name (not IP): `sip.yourcompany.com` or `account1` (becomes `account1.sip.jambonz.cloud`)
+- Configure DNS if using custom domain: `sip.yourcompany.com A → ${HOST_IP}`
+
+**Important:**
+- ❌ Don't use IP address as SIP realm (use domain name)
+- ❌ Don't duplicate SIP realm across accounts (must be unique)
+- ✅ SIP Realm is different from SIP Signaling IP (SIP Realm = device registration, SIP IP = carrier traffic)
+
 ## Updating SIP Signaling IP Addresses
 
 **Important for AWS/Cloud Deployments:** The webapp displays SIP signaling IPs that carriers need to whitelist. These are stored in the database and initially contain example IPs.

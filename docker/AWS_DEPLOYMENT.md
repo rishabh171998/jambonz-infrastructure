@@ -191,6 +191,30 @@ EOF
 - Carriers need to whitelist these IPs to send SIP traffic to your system
 - **If this isn't updated, carriers will see example IPs that don't work!**
 
+### Step 8: Configure SIP Realm Domain (Account Level)
+
+**What is SIP Realm?**
+- SIP realm is the domain that SIP devices register to (e.g., `sip.yourcompany.com` or `account1.sip.jambonz.cloud`)
+- Stored at **account level** in `accounts.sip_realm` column (just for storage)
+- Each account must have a unique SIP realm
+
+**✅ What TO Do:**
+
+1. **Set in Webapp**: Accounts → Create/Edit Account → Enter SIP realm (e.g., `sip.yourcompany.com` or `account1`)
+2. **DNS Setup** (if using custom domain): Create A record pointing to your EC2 IP
+3. **Verify**: `docker-compose exec mysql mysql -ujambones -pjambones jambones -e "SELECT name, sip_realm FROM accounts;"`
+
+**❌ What NOT To Do:**
+
+- ❌ Don't use IP address: `sip_realm = '13.203.223.245'` (use domain name)
+- ❌ Don't duplicate: Each account needs unique SIP realm
+- ❌ Don't forget DNS: Custom domains need DNS A record to EC2 IP
+- ❌ Don't confuse with SIP Signaling IP: SIP Realm = device registration domain (account level), SIP IP = carrier traffic (system level in `sbc_addresses`)
+
+**Examples:**
+- `customer1.sip.jambonz.cloud` (uses default root domain, no DNS needed)
+- `sip.mycompany.com` (custom domain, requires DNS: `sip.mycompany.com A → 13.203.223.245`)
+
 ## Potential Issues and Solutions
 
 ### Issue 1: Container Names Not Resolving
