@@ -153,7 +153,7 @@ build {
   provisioner "shell" {
     execute_command = "chmod +x {{ .Path }}; sudo '{{ .Path }}' ${var.distro} ${var.install_homer} ${var.homer_user} ${var.homer_password}"
     script          = "scripts/install_homer.sh"
-    timeout         = "30m"
+    timeout         = "45m"
     expect_disconnect = true
   }
 

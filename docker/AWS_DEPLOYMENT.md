@@ -191,7 +191,22 @@ EOF
 - Carriers need to whitelist these IPs to send SIP traffic to your system
 - **If this isn't updated, carriers will see example IPs that don't work!**
 
-### Step 8: Configure SIP Realm Domain (Account Level)
+### Step 8: Configure Route53 DNS (If Using Custom Domain)
+
+**If you're using a custom SIP realm domain** (e.g., `sip.yourcompany.com`), you need to configure Route53 DNS records.
+
+**Quick Setup:**
+1. Go to **Route53 → Hosted zones → Your domain**
+2. Create **A record**:
+   - Name: `sip` (or `*.sip` for wildcard)
+   - Type: `A`
+   - Value: Your EC2 public IP (e.g., `13.203.223.245`)
+   - TTL: `300`
+3. Verify: `dig sip.yourcompany.com` should return your EC2 IP
+
+**For detailed Route53 setup, see:** `AWS_ROUTE53_SETUP.md`
+
+### Step 9: Configure SIP Realm Domain (Account Level)
 
 **What is SIP Realm?**
 - SIP realm is the domain that SIP devices register to (e.g., `sip.yourcompany.com` or `account1.sip.jambonz.cloud`)
