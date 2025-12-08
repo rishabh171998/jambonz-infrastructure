@@ -57,9 +57,14 @@ echo "=== Setting up InfluxDB ==="
 echo "Waiting for InfluxDB to be ready..."
 sleep 5
 
-# Create jambones database in InfluxDB
+# Create jambones database in InfluxDB (InfluxDB 1.8 doesn't support IF NOT EXISTS)
 echo "Creating jambones database in InfluxDB..."
-sudo docker compose exec -T influxdb influx -execute "CREATE DATABASE IF NOT EXISTS jambones" 2>/dev/null || echo "Database may already exist"
+if sudo docker compose exec -T influxdb influx -execute "SHOW DATABASES" 2>/dev/null | grep -q "jambones"; then
+    echo "  jambones database already exists, skipping..."
+else
+    echo "  Creating jambones database..."
+    sudo docker compose exec -T influxdb influx -execute "CREATE DATABASE jambones" 2>/dev/null && echo "  ✓ jambones database created" || echo "  ✗ Failed to create database (may already exist)"
+fi
 
 echo ""
 echo "=== Waiting for all services to be ready ==="
@@ -77,7 +82,12 @@ sudo docker compose exec mysql mysqladmin ping -h 127.0.0.1 --protocol tcp --sil
 
 echo ""
 echo "InfluxDB:"
-sudo docker compose exec influxdb influx -execute "SHOW DATABASES" 2>/dev/null | grep -q jambones && echo "✓ InfluxDB jambones database exists" || echo "✗ InfluxDB database not found"
+if sudo docker compose exec -T influxdb influx -execute "SHOW DATABASES" 2>/dev/null | grep -q "jambones"; then
+    echo "✓ InfluxDB jambones database exists"
+else
+    echo "✗ InfluxDB database not found - attempting to create..."
+    sudo docker compose exec -T influxdb influx -execute "CREATE DATABASE jambones" 2>/dev/null && echo "  ✓ Created jambones database" || echo "  ✗ Failed to create database"
+fi
 
 echo ""
 echo "Jaeger:"
