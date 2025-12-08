@@ -163,6 +163,7 @@ services:
       DRACHTIO_HOST: drachtio-sbc
       DRACHTIO_PORT: 9022
       DRACHTIO_SECRET: cymru
+      DRACHTIO_TAG: sbc-inbound
       HTTP_PORT: 4000
       JAMBONES_RTPENGINES: 'rtpengine:22222'
       JAMBONES_NETWORK_CIDR: 172.10.0.0/16
@@ -184,6 +185,7 @@ services:
       DRACHTIO_HOST: drachtio-sbc
       DRACHTIO_PORT: 9022
       DRACHTIO_SECRET: cymru
+      DRACHTIO_TAG: sbc-outbound
       HTTP_PORT: 4000
       JAMBONES_RTPENGINES: 'rtpengine:22222'
       JAMBONES_NETWORK_CIDR: 172.10.0.0/16
