@@ -125,6 +125,7 @@ services:
     environment:
       API_BASE_URL: http://${HOST_IP}:3000/v1
       DISABLE_JAEGER_TRACING: "false"
+      DISABLE_CALL_RECORDING: "false"
     depends_on:
       - api-server
       - jaeger
