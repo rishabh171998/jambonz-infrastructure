@@ -116,7 +116,7 @@ services:
         ipv4_address: 172.10.0.30
 
   webapp:
-    build: ./jambonz-webapp-main
+    image: ghcr.io/jambonz/webapp:latest
     networks:
       jambonz:
         ipv4_address: 172.10.0.31
