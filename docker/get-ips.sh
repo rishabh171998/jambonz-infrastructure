@@ -11,11 +11,16 @@ if [ -z "$LOCAL_IP" ]; then
   elif curl -s --max-time 2 -H "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/instance/network-interfaces/0/ip > /dev/null 2>&1; then
     LOCAL_IP=$(curl -s -H "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/instance/network-interfaces/0/ip)
   # Fallback: extract from hostname (e.g., ip-172-31-13-217 -> 172.31.13.217)
-  elif hostname | grep -q "^ip-"; then
-    LOCAL_IP=$(hostname | sed 's/^ip-//' | sed 's/-/./g')
+  elif HOSTNAME=$(hostname 2>/dev/null) && echo "$HOSTNAME" | grep -q "^ip-"; then
+    LOCAL_IP=$(echo "$HOSTNAME" | sed 's/^ip-//' | sed 's/-/./g')
   # Fallback: get first non-loopback IP from hostname -I
+  elif HOSTNAME_IP=$(hostname -I 2>/dev/null | awk '{print $1}') && [ -n "$HOSTNAME_IP" ]; then
+    LOCAL_IP="$HOSTNAME_IP"
+  # Fallback: get from ip route
+  elif IP_ROUTE=$(ip route get 8.8.8.8 2>/dev/null | awk '{print $7; exit}') && [ -n "$IP_ROUTE" ]; then
+    LOCAL_IP="$IP_ROUTE"
   else
-    LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || ip route get 8.8.8.8 2>/dev/null | awk '{print $7; exit}' || echo "")
+    LOCAL_IP=""
   fi
 fi
 
