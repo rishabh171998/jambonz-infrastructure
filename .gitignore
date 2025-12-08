@@ -10,4 +10,4 @@ tmpAudio/
 .idea
 *.iml
 
-variables.json
+variables.jsondocker/.env

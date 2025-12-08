@@ -42,6 +42,8 @@ DROP TABLE IF EXISTS api_keys;
 
 DROP TABLE IF EXISTS sbc_addresses;
 
+DROP TABLE IF EXISTS system_information;
+
 DROP TABLE IF EXISTS ms_teams_tenants;
 
 DROP TABLE IF EXISTS service_provider_limits;
@@ -248,8 +250,20 @@ CREATE TABLE sbc_addresses
 sbc_address_sid CHAR(36) NOT NULL UNIQUE ,
 ipv4 VARCHAR(255) NOT NULL,
 port INTEGER NOT NULL DEFAULT 5060,
+tls_port INTEGER NULL,
+wss_port INTEGER NULL,
+last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 service_provider_sid CHAR(36),
 PRIMARY KEY (sbc_address_sid)
+);
+
+CREATE TABLE system_information
+(
+domain_name VARCHAR(255) NULL,
+sip_domain_name VARCHAR(255) NULL,
+monitoring_domain_name VARCHAR(255) NULL,
+private_network_cidr VARCHAR(255) NULL,
+log_level ENUM('info', 'debug') NOT NULL DEFAULT 'info'
 );
 
 CREATE TABLE ms_teams_tenants

@@ -1,6 +1,6 @@
 {
   "variables": {
-    "region": "ap-south-1",
+    "region": "us-east-1",
     "ssh_username": "admin",
     "ami_description": "jambonz all-in-one AMI",
     "instance_type": "c6in.xlarge",
@@ -23,15 +23,26 @@
     "mediaserver_name": "jambonz",
     "preferred_codec_list": "PCMU,PCMA,OPUS,G722",
     "distro": "debian-11",
-    "leave_source": "yes"
+    "leave_source": "yes",
+    **"apiban_username": "",**
+    **"apiban_password": ""**
   },
   "builders": [
     {
       "type": "amazon-ebs",
-      "region": "ap-south-1",
+      "region": "{{user `region`}}",
+      "source_ami_filter": {
+        "filters": {
+          "virtualization-type": "hvm",
+          "name": "jambonz-base-image-{{user `distro`}}",
+          "root-device-type": "ebs"
+        },
+        "owners": ["376029039784"],
+        "most_recent": true
+      },
       "instance_type": "{{user `instance_type`}}",
       "ssh_username": "{{user `ssh_username`}}",
-      "ami_name": "jambonz-mini-{{user `jambonz_version`}}-{{isotime |clean_resource_name }}",
+      "ami_name": "jambonz-mini-{{user `jambonz_version`}}-{{isotime | clean_resource_name }}",
       "ami_description": "{{user `ami_description`}}",
       "launch_block_device_mappings": [
         {
@@ -46,8 +57,7 @@
       },
       "run_tags": {
         "Name": "jambonz-mini-build"
-      },
-      "source_ami": "ami-044bbdd490504115a"
+      }
     }
   ],
   "provisioners": [

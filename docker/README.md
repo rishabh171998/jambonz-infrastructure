@@ -19,6 +19,17 @@ There are a few configuration items you will need to supply before running docke
 
 3. Optionally, if you want to use AWS/Polly for text-to-speech then specify your AWS credentials (access key id, secret access key, and region) in the [.env](.env) file.
 
+4. **GitHub Container Registry (GHCR) Authentication**: If you need to pull private Docker images from GHCR, authenticate first:
+   ```bash
+   export GHCR_USER=your-username
+   export GHCR_PAT=your-personal-access-token
+   ./ghcr-auth.sh
+   ```
+   Or run directly:
+   ```bash
+   export GHCR_USER=your-username && export GHCR_PAT=your-pat && echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+   ```
+
 ## Running
 Checkout and install as follows:
 ```
@@ -46,6 +57,23 @@ docker-compose -f docker-compose.yaml down
 **Note**: The mysql database will be stored in the `data_volume/` subfolder that is created, so that your provisioning data will persist between restarts of the docker network.
 
 Once you have provisioned the system, you should be able to point sip devices to register and send INVITEs to port 5060 on host ip address that you configured above and have that traffic routed to your jambonz system.
+
+## Updating SIP Signaling IP Addresses
+
+**Important for AWS/Cloud Deployments:** The webapp displays SIP signaling IPs that carriers need to whitelist. These are stored in the database and initially contain example IPs.
+
+After starting Docker Compose, update the SBC IP addresses with your actual public IP:
+
+```bash
+# Run the update script (automatically detects your public IP)
+./update-sbc-ip.sh
+
+# Or manually set HOST_IP first
+export HOST_IP=your.public.ip.address
+./update-sbc-ip.sh
+```
+
+This ensures that when you create carriers in the webapp, the "Have your carriers whitelist our SIP signaling IPs" section shows your actual IP address instead of example IPs.
 
 ## Capacity
 The system has limited capacity as it is intended to be used as a personal development / test machine.  

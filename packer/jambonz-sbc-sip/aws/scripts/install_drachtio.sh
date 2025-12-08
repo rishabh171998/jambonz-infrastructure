@@ -6,7 +6,8 @@ echo "drachtio version to install is ${VERSION}"
 
 chmod 0777 /usr/local/src
 cd /usr/local/src
-git clone https://github.com/davehorton/drachtio-server.git -b ${VERSION}
+# Disable credential prompts for non-interactive environments
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/davehorton/drachtio-server.git -b ${VERSION}
 cd drachtio-server
 git submodule update --init --recursive
 ./autogen.sh && mkdir -p build && cd $_ && ../configure --enable-tcmalloc=yes CPPFLAGS='-DNDEBUG -O2 -g' && make -j 4 && sudo make install

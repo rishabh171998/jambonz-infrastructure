@@ -41,24 +41,25 @@ echo done
 echo config git
 git config --global pull.rebase true
 echo done
-git clone https://github.com/signalwire/freeswitch.git -b ${FREESWITCH_VERSION}
-git clone https://github.com/warmcat/libwebsockets.git -b ${LWS_VERSION}
-git clone https://github.com/drachtio/drachtio-freeswitch-modules.git -b ${MODULES_VERSION}
-git clone https://github.com/grpc/grpc -b master
+# Disable credential prompts for non-interactive environments
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/signalwire/freeswitch.git -b ${FREESWITCH_VERSION}
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/warmcat/libwebsockets.git -b ${LWS_VERSION}
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/drachtio/drachtio-freeswitch-modules.git -b ${MODULES_VERSION}
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/grpc/grpc -b master
 cd grpc && git checkout ${GRPC_VERSION} && cd ..
 
 cd freeswitch/libs
-git clone https://github.com/drachtio/nuance-asr-grpc-api.git -b main
-git clone https://github.com/drachtio/riva-asr-grpc-api.git -b main
-git clone https://github.com/drachtio/soniox-asr-grpc-api.git -b main
-git clone https://github.com/freeswitch/spandsp.git -b master
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/drachtio/nuance-asr-grpc-api.git -b main
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/drachtio/riva-asr-grpc-api.git -b main
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/drachtio/soniox-asr-grpc-api.git -b main
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/freeswitch/spandsp.git -b master
 cd spandsp && git checkout 728b60abdd1a71e254b8e831e9156521d788b2b9 && cd ..
-git clone https://github.com/freeswitch/sofia-sip.git -b master
-git clone https://github.com/dpirch/libfvad.git
-git clone https://github.com/aws/aws-sdk-cpp.git -b ${AWS_SDK_VERSION}
-git clone https://github.com/googleapis/googleapis -b master 
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/freeswitch/sofia-sip.git -b master
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/dpirch/libfvad.git
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/aws/aws-sdk-cpp.git -b ${AWS_SDK_VERSION}
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/googleapis/googleapis -b master 
 cd googleapis && git checkout ${GOOGLE_API_VERSION} && cd ..
-git clone https://github.com/awslabs/aws-c-common.git
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/awslabs/aws-c-common.git
 
 sudo cp -r /usr/local/src/drachtio-freeswitch-modules/modules/mod_audio_fork /usr/local/src/freeswitch/src/mod/applications/mod_audio_fork
 sudo cp -r /usr/local/src/drachtio-freeswitch-modules/modules/mod_aws_transcribe /usr/local/src/freeswitch/src/mod/applications/mod_aws_transcribe

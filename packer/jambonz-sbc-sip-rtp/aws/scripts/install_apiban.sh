@@ -1,6 +1,7 @@
 #!/bin/bash
 cd /usr/local/src/
-git clone https://github.com/palner/apiban.git
+# Disable credential prompts for non-interactive environments
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/palner/apiban.git
 sudo mkdir /usr/local/bin/apiban && sudo chmod 0755 /usr/local/bin/apiban
 sudo cp -r /usr/local/src/apiban/clients/go/apiban-iptables-client /usr/local/bin/apiban && sudo chmod +x /usr/local/bin/apiban/apiban-iptables-client
 sudo cp /tmp/config.json /usr/local/bin/apiban/config.json

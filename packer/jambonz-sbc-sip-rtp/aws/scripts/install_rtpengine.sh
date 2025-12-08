@@ -24,17 +24,18 @@ if [[ "$DISTRO" == rhel* ]]; then
 fi
 
 cd /usr/local/src
-git clone https://github.com/BelledonneCommunications/bcg729.git
+# Disable credential prompts for non-interactive environments
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/BelledonneCommunications/bcg729.git
 cd bcg729
 cmake . -DCMAKE_INSTALL_PREFIX=/usr && make && sudo make install chdir=/usr/local/src/bcg729
 cd /usr/local/src
 
-git clone https://github.com/warmcat/libwebsockets.git -b v4.3.2
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/warmcat/libwebsockets.git -b v4.3.2
 cd /usr/local/src/libwebsockets
 mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo && make -j 8 && sudo make install
 
 cd /usr/local/src
-git clone https://github.com/sipwise/rtpengine.git -b ${VERSION}
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/sipwise/rtpengine.git -b ${VERSION}
 cd rtpengine
 
 if [[ "$DISTRO" == rhel* ]] && [[ "$RHEL_RELEASE" == "9" ]]; then

@@ -4,7 +4,8 @@ if [ "$1" == "yes" ]; then
 
 #install node-red
 mkdir -p apps && cd $_
-git clone https://github.com/node-red/node-red.git
+# Disable credential prompts for non-interactive environments
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/node-red/node-red.git
 cd node-red
 sudo npm install --unsafe-perm
 grunt build

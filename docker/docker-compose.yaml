@@ -4,7 +4,7 @@ version: "3.9"
 # not all containers use all of these env vars, but they are common
 # enough it's much simpler to track them in one place
 x-common-variables: &common-variables
-  JAMBONES_MYSQL_HOST: 172.10.0.2
+  JAMBONES_MYSQL_HOST: mysql
   JAMBONES_MYSQL_USER: jambones
   JAMBONES_MYSQL_PASSWORD: jambones
   JAMBONES_MYSQL_DATABASE: jambones
@@ -14,10 +14,10 @@ x-common-variables: &common-variables
   ENCRYPTION_SECRET: '5a3e38b5-3188-4936-89c9-fb0df3138b5c'
   AUTHENTICATION_KEY: '5a3e38b5-3188-4936-89c9-fb0df3138b5c'
   NODE_ENV: production
-  JAMBONES_TIME_SERIES_HOST: 172.10.0.61
+  JAMBONES_TIME_SERIES_HOST: influxdb
   ENABLE_METRICS: 0
   JAMBONES_CLUSTER_ID: jb
-  JAMBONES_REDIS_HOST: 172.10.0.3
+  JAMBONES_REDIS_HOST: redis
   JAMBONES_REDIS_PORT: 6379
   JAMBONES_LOGLEVEL: info
   # note that DRACHTIO_HOST is different for the feature server,
@@ -63,7 +63,7 @@ services:
   drachtio-sbc:
     image: drachtio/drachtio-server:latest
     restart: always
-    command: ["drachtio", "--contact", "sip:172.10.0.10;transport=udp,tcp",  "--external-ip",  "${HOST_IP}", "--address", "0.0.0.0", "--port", "9022", "--disable-nat-detection"]
+    command: ["drachtio", "--contact", "sip:${HOST_IP};transport=udp,tcp",  "--external-ip",  "${HOST_IP}", "--address", "0.0.0.0", "--port", "9022", "--disable-nat-detection"]
     volumes:
       - ./sbc/drachtio.conf.xml:/etc/drachtio.conf.xml
     ports:
@@ -119,7 +119,9 @@ services:
     restart: always
     environment:
       <<: *common-variables
-      DRACHTIO_HOST: 172.10.0.10
+      DRACHTIO_HOST: drachtio-sbc
+      DRACHTIO_PORT: 9022
+      DRACHTIO_SECRET: cymru
     depends_on:
       mysql:
         condition: service_healthy
@@ -137,8 +139,8 @@ services:
       DOCKER_BRIDGE_IP: 172.10.0.1
       JAMBONES_NETWORK_CIDR: 172.10.0.0/16
       HTTP_PORT: 4000
-      JAMBONES_INBOUND_ROUTE: 127.0.0.1:4002
-      JAMBONES_OUTBOUND_ROUTE: 127.0.0.1:4003
+      JAMBONES_INBOUND_ROUTE: sbc-inbound:4000
+      JAMBONES_OUTBOUND_ROUTE: sbc-outbound:4000
       JAMBONZ_TAGGED_INBOUND: 1
     depends_on:
       mysql:
@@ -155,10 +157,13 @@ services:
     environment:
       <<: *common-variables
       NODE_ENV: test
-      DRACHTIO_HOST: 172.10.0.10
-      JAMBONES_RTPENGINES: '172.10.0.11:22222'
+      DRACHTIO_HOST: drachtio-sbc
+      DRACHTIO_PORT: 9022
+      DRACHTIO_SECRET: cymru
+      HTTP_PORT: 4000
+      JAMBONES_RTPENGINES: 'rtpengine:22222'
       JAMBONES_NETWORK_CIDR: 172.10.0.0/16
-      JAMBONES_FEATURE_SERVERS: 172.10.0.50:5060
+      JAMBONES_FEATURE_SERVERS: drachtio-fs:5060
     depends_on:
       mysql:
         condition: service_healthy
@@ -173,8 +178,11 @@ services:
     restart: always
     environment:
       <<: *common-variables
-      DRACHTIO_HOST: 172.10.0.10
-      JAMBONES_RTPENGINES: '172.10.0.11:22222'
+      DRACHTIO_HOST: drachtio-sbc
+      DRACHTIO_PORT: 9022
+      DRACHTIO_SECRET: cymru
+      HTTP_PORT: 4000
+      JAMBONES_RTPENGINES: 'rtpengine:22222'
       JAMBONES_NETWORK_CIDR: 172.10.0.0/16
     depends_on:
       mysql:
@@ -188,7 +196,7 @@ services:
   drachtio-fs:
     image: drachtio/drachtio-server:latest
     restart: always
-    command: ["drachtio", "--contact", "sip:*;transport=udp", "--contact", "sip:*;transport=tcp", "--address", "0.0.0.0", "--port", "9022"]
+    command: ["drachtio", "--contact", "sip:*;transport=udp", "--contact", "sip:*;transport=tcp", "--address", "0.0.0.0", "--port", "9023"]
     networks:
       jambonz:
         ipv4_address: 172.10.0.50
@@ -214,12 +222,13 @@ services:
     environment:
       <<: *common-variables
       GOOGLE_APPLICATION_CREDENTIALS: /opt/credentials/gcp.json
-      DRACHTIO_HOST: 172.10.0.50
+      DRACHTIO_HOST: drachtio-fs
+      DRACHTIO_PORT: 9023
+      DRACHTIO_SECRET: cymru
       JAMBONES_NETWORK_CIDR: 172.10.0.0/16
       HTTP_PORT: 3000
-      JAMBONES_SBCS: 172.10.0.10
-      JAMBONES_FEATURE_SERVERS: 172.10.0.50:9022:cymru
-      JAMBONES_FREESWITCH: 172.10.0.51:8021:JambonzR0ck$
+      JAMBONES_SBCS: drachtio-sbc
+      JAMBONES_FREESWITCH: freeswitch:8021:JambonzR0ck$
     depends_on:
       - mysql
       - redis

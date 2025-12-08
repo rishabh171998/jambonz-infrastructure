@@ -56,7 +56,8 @@ echo "CREATE KEYSPACE IF NOT EXISTS jaeger_v1_dc1 WITH replication = {'class': '
 cqlsh -u cassandra -p cassandra -e "CREATE KEYSPACE IF NOT EXISTS jaeger_v1_dc1 WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '2'}  AND durable_writes = true;"
 cqlsh -u cassandra -p cassandra -e "GRANT ALL PERMISSIONS ON KEYSPACE jaeger_v1_dc1 TO $USER_TO_CREATE;"
 
-git clone https://github.com/jaegertracing/jaeger.git
+# Disable credential prompts for non-interactive environments
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/jaegertracing/jaeger.git
 cd jaeger/plugin/storage/cassandra/schema
 MODE=prod DATACENTER=datacenter1 TRACE_TTL=604800 KEYSPACE=jaeger_v1_dc1 ./create.sh | cqlsh localhost -u cassandra -p cassandra
 

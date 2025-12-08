@@ -4,17 +4,18 @@ VERSION=$1
 echo "rtpengine version to install is ${VERSION}, cloud provider is $2"
 
 cd /usr/local/src
-git clone https://github.com/BelledonneCommunications/bcg729.git
+# Disable credential prompts for non-interactive environments
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/BelledonneCommunications/bcg729.git
 cd bcg729
 cmake . -DCMAKE_INSTALL_PREFIX=/usr && make && sudo make install chdir=/usr/local/src/bcg729
 cd /usr/local/src
 
-git clone https://github.com/warmcat/libwebsockets.git -b v3.2.3
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/warmcat/libwebsockets.git -b v3.2.3
 cd /usr/local/src/libwebsockets
 sudo mkdir -p build && cd build && sudo cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo && sudo make && sudo make install
 
 cd /usr/local/src
-git clone https://github.com/sipwise/rtpengine.git -b ${VERSION}
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/sipwise/rtpengine.git -b ${VERSION}
 cd rtpengine
 make -j 4  with_transcoding=yes with_iptables_option=yes with-kernel
 
