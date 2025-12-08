@@ -14,19 +14,11 @@ IP_OUTPUT=$(bash ./get-ips.sh 2>/dev/null || true)
 LOCAL_IP=$(echo "$IP_OUTPUT" | grep "^LOCAL_IP=" | cut -d'=' -f2 | tr -d '\n')
 HOST_IP=$(echo "$IP_OUTPUT" | grep "^HOST_IP=" | cut -d'=' -f2 | tr -d '\n')
 
-# If still empty, try direct detection
-if [ -z "$LOCAL_IP" ]; then
-  # Try AWS metadata
-  if curl -s --max-time 2 http://169.254.169.254/latest/meta-data/local-ipv4 > /dev/null 2>&1; then
-    LOCAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-  # Extract from hostname
-  elif HOSTNAME=$(hostname 2>/dev/null) && echo "$HOSTNAME" | grep -q "^ip-"; then
-    LOCAL_IP=$(echo "$HOSTNAME" | sed 's/^ip-//' | sed 's/-/./g')
-  # Get from hostname -I
-  elif HOSTNAME_IP=$(hostname -I 2>/dev/null | awk '{print $1}') && [ -n "$HOSTNAME_IP" ]; then
-    LOCAL_IP="$HOSTNAME_IP"
-  fi
-fi
+# For Docker deployments, LOCAL_IP must be the Docker network IP (172.10.0.10)
+# This is the IP assigned to drachtio-sbc in docker-compose.yaml
+# The host's private IP (e.g., 172.31.13.217) is NOT available inside containers
+# and will cause "Cannot assign requested address" errors
+LOCAL_IP="172.10.0.10"
 
 if [ -z "$HOST_IP" ]; then
   # Try AWS metadata
@@ -38,10 +30,11 @@ if [ -z "$HOST_IP" ]; then
   fi
 fi
 
+# LOCAL_IP is always set to Docker network IP above, so this check should never fail
+# But keeping it for safety
 if [ -z "$LOCAL_IP" ]; then
-  echo "ERROR: Could not detect LOCAL_IP"
-  echo "Please set it manually:"
-  echo "  export LOCAL_IP=172.31.13.217"
+  echo "ERROR: LOCAL_IP is not set (this should not happen)"
+  echo "For Docker, LOCAL_IP should be 172.10.0.10"
   exit 1
 fi
 

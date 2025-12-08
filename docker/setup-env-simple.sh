@@ -3,8 +3,10 @@
 
 cd /opt/jambonz-infrastructure/docker
 
-# Get LOCAL_IP from hostname (ip-172-31-13-217 -> 172.31.13.217)
-LOCAL_IP=$(hostname | sed 's/^ip-//' | sed 's/-/./g')
+# For Docker containers, LOCAL_IP should be the Docker network IP (172.10.0.10)
+# This is the IP assigned to drachtio-sbc in docker-compose.yaml
+# The host's private IP (e.g., 172.31.13.217) is NOT available inside containers
+LOCAL_IP="172.10.0.10"
 
 # Get HOST_IP from AWS metadata or external service
 HOST_IP=$(curl -s --max-time 2 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || \
@@ -28,6 +30,6 @@ HOST_IP=${HOST_IP}
 EOF
 
 echo "✅ Created .env file:"
-echo "   LOCAL_IP=${LOCAL_IP}"
-echo "   HOST_IP=${HOST_IP}"
+echo "   LOCAL_IP=${LOCAL_IP} (Docker network IP for drachtio-sbc)"
+echo "   HOST_IP=${HOST_IP} (Public IP for external SIP signaling)"
 
