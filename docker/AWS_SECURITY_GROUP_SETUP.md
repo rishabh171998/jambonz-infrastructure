@@ -9,7 +9,7 @@
 |------|----------|------------|--------|-------------|
 | Custom UDP | UDP | 5060 | `0.0.0.0/0` or specific CIDR | SIP signaling (UDP) |
 | Custom TCP | TCP | 5060 | `0.0.0.0/0` or specific CIDR | SIP signaling (TCP) |
-| Custom TCP | TCP | 5061 | `0.0.0.0/0` or specific CIDR | SIP over TLS (optional) |
+| Custom TCP | TCP | 5061 | `0.0.0.0/0` or specific CIDR | SIP over TLS (required if using TLS) |
 | Custom TCP | TCP | 8443 | `0.0.0.0/0` or specific CIDR | SIP over WSS (optional) |
 
 #### RTP Media (Required)
@@ -67,7 +67,7 @@ Click **Add Rule** for each rule below:
 **SIP Rules:**
 - Type: `Custom UDP`, Port: `5060`, Source: `0.0.0.0/0` (or your carrier IPs)
 - Type: `Custom TCP`, Port: `5060`, Source: `0.0.0.0/0` (or your carrier IPs)
-- Type: `Custom TCP`, Port: `5061`, Source: `0.0.0.0/0` (optional, for TLS)
+- Type: `Custom TCP`, Port: `5061`, Source: `0.0.0.0/0` (required if using TLS/SRTP)
 - Type: `Custom TCP`, Port: `8443`, Source: `0.0.0.0/0` (optional, for WSS)
 
 **RTP Rules:**
@@ -123,6 +123,13 @@ aws ec2 authorize-security-group-ingress \
   --group-id $GROUP_ID \
   --protocol tcp \
   --port 5060 \
+  --cidr 0.0.0.0/0
+
+# SIP TLS (required if using TLS/SRTP)
+aws ec2 authorize-security-group-ingress \
+  --group-id $GROUP_ID \
+  --protocol tcp \
+  --port 5061 \
   --cidr 0.0.0.0/0
 
 # RTP UDP Range
@@ -191,6 +198,15 @@ resource "aws_security_group" "jambonz_docker" {
     description = "SIP TCP"
     from_port   = 5060
     to_port     = 5060
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # SIP TLS (required if using TLS/SRTP)
+  ingress {
+    description = "SIP TLS"
+    from_port   = 5061
+    to_port     = 5061
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

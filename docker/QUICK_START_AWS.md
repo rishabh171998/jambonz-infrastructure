@@ -49,8 +49,9 @@ sudo chown -R $USER:$USER /opt/jambonz-infrastructure
 
 | Type | Protocol | Port Range | Source | Description |
 |------|----------|------------|--------|-------------|
-| Custom UDP | UDP | 5060 | 0.0.0.0/0 | SIP Signaling |
-| Custom TCP | TCP | 5060 | 0.0.0.0/0 | SIP Signaling |
+| Custom UDP | UDP | 5060 | 0.0.0.0/0 | SIP Signaling (UDP) |
+| Custom TCP | TCP | 5060 | 0.0.0.0/0 | SIP Signaling (TCP) |
+| Custom TCP | TCP | 5061 | 0.0.0.0/0 | SIP TLS (if using TLS/SRTP) |
 | Custom UDP | UDP | 40000-60000 | 0.0.0.0/0 | RTP Media |
 | Custom TCP | TCP | 3000 | 0.0.0.0/0 | API Server |
 | Custom TCP | TCP | 3001 | 0.0.0.0/0 | Webapp |
@@ -69,6 +70,9 @@ aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol udp --port
 
 # Add SIP TCP
 aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 5060 --cidr 0.0.0.0/0
+
+# Add SIP TLS (if using TLS/SRTP)
+aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 5061 --cidr 0.0.0.0/0
 
 # Add RTP Media (UDP 40000-60000)
 aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol udp --port 40000 --cidr 0.0.0.0/0

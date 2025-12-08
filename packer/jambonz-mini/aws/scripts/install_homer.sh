@@ -57,15 +57,7 @@ else
   # We'll use expect or yes to automate
   if command -v expect &> /dev/null; then
     # Use expect for better automation
-    sudo expect <<EOF || {
-      echo "WARNING: homer-installer failed with expect"
-      echo "Trying with yes command..."
-      yes | sudo ./homer_installer.sh || {
-        echo "WARNING: homer-installer may have failed"
-        echo "Homer installation will be skipped - Jambonz will work without it"
-        exit 0
-      }
-    }
+    sudo expect <<'EXPECT_EOF' || {
 spawn sudo ./homer_installer.sh
 expect {
     "*[Yy]es*" { send "yes\r"; exp_continue }
@@ -75,7 +67,15 @@ expect {
     eof
 }
 wait
-EOF
+EXPECT_EOF
+      echo "WARNING: homer-installer failed with expect"
+      echo "Trying with yes command..."
+      yes | sudo ./homer_installer.sh || {
+        echo "WARNING: homer-installer may have failed"
+        echo "Homer installation will be skipped - Jambonz will work without it"
+        exit 0
+      }
+    }
   else
     # Fallback to yes command (less reliable but works)
     yes | sudo ./homer_installer.sh || {
