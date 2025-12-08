@@ -62,6 +62,9 @@ services:
     image: drachtio/drachtio-server:latest
     restart: always
     entrypoint: ["/bin/bash", "/etc/drachtio/drachtio-entrypoint.sh"]
+    environment:
+      LOCAL_IP: ${LOCAL_IP:-172.10.0.10}
+      HOST_IP: ${HOST_IP}
     volumes:
       - ./sbc/drachtio.conf.xml:/etc/drachtio.conf.xml
       - ./sbc/drachtio-entrypoint.sh:/etc/drachtio/drachtio-entrypoint.sh:ro
