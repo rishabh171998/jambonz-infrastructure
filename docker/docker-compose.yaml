@@ -227,6 +227,10 @@ services:
       - "8022:8021/tcp"
     volumes:
       - ./tmpAudio:/tmp
+    environment:
+      MOD_AUDIO_FORK_SUBPROTOCOL_NAME: audio.jambonz.org
+      MOD_AUDIO_FORK_SERVICE_THREADS: 1
+      MOD_AUDIO_FORK_BUFFER_SECS: 3
     networks:
       jambonz:
         ipv4_address: 172.10.0.51
