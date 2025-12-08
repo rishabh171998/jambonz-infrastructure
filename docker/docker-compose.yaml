@@ -168,6 +168,7 @@ services:
       JAMBONES_RTPENGINES: 'rtpengine:22222'
       JAMBONES_NETWORK_CIDR: 172.10.0.0/16
       JAMBONES_FEATURE_SERVERS: drachtio-fs:5060
+      HOST_IP: ${HOST_IP}
     depends_on:
       mysql:
         condition: service_healthy
