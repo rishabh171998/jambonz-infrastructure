@@ -220,7 +220,7 @@ services:
         ipv4_address: 172.10.0.50
 
   freeswitch:
-    image: drachtio/drachtio-freeswitch-mrf:1.10.5
+    image: drachtio/drachtio-freeswitch-mrf:latest
     restart: always
     command: ["freeswitch", "--rtp-range-start", "20000", "--rtp-range-end", "20100"]
     ports:
