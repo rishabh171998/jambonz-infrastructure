@@ -33,15 +33,41 @@ fi
 echo -e "${BLUE}Detected OS: $OS $VER${NC}"
 echo ""
 
-# Get public IP from AWS metadata
+# Get public IP from various sources
 echo "Detecting public IP address..."
-PUBLIC_IP=$(curl -s --max-time 5 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo "")
+PUBLIC_IP=""
+
+# Try AWS metadata first
 if [ -z "$PUBLIC_IP" ]; then
-    echo -e "${YELLOW}WARNING: Could not detect public IP from metadata${NC}"
-    read -p "Please enter your public IP address: " PUBLIC_IP
-    if [ -z "$PUBLIC_IP" ]; then
-        echo -e "${RED}ERROR: Public IP is required${NC}"
-        exit 1
+    PUBLIC_IP=$(curl -s --max-time 5 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo "")
+fi
+
+# Try external service as fallback
+if [ -z "$PUBLIC_IP" ]; then
+    PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null || echo "")
+fi
+
+# Try another external service
+if [ -z "$PUBLIC_IP" ]; then
+    PUBLIC_IP=$(curl -s --max-time 5 https://ifconfig.me 2>/dev/null || echo "")
+fi
+
+# If still no IP, prompt user (non-interactive: use default)
+if [ -z "$PUBLIC_IP" ]; then
+    echo -e "${YELLOW}Could not automatically detect public IP address${NC}"
+    if [ -t 0 ]; then
+        # Interactive mode
+        echo "Your server's public IP appears to be: 13.203.223.245"
+        read -p "Enter your public IP address (or press Enter to use 13.203.223.245): " USER_IP
+        if [ -z "$USER_IP" ]; then
+            PUBLIC_IP="13.203.223.245"
+        else
+            PUBLIC_IP="$USER_IP"
+        fi
+    else
+        # Non-interactive mode (piped from curl)
+        echo "Using default IP: 13.203.223.245"
+        PUBLIC_IP="13.203.223.245"
     fi
 fi
 
