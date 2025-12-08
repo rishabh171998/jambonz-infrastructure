@@ -7,7 +7,19 @@ cd /opt/jambonz-infrastructure/docker
 LOCAL_IP=$(hostname | sed 's/^ip-//' | sed 's/-/./g')
 
 # Get HOST_IP from AWS metadata or external service
-HOST_IP=$(curl -s --max-time 2 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || curl -s --max-time 5 http://ipecho.net/plain 2>/dev/null || echo "13.203.223.245")
+HOST_IP=$(curl -s --max-time 2 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || \
+          curl -s --max-time 5 http://ipecho.net/plain 2>/dev/null || \
+          curl -s --max-time 5 http://ifconfig.me 2>/dev/null || \
+          curl -s --max-time 5 http://icanhazip.com 2>/dev/null || \
+          echo "")
+
+# If still empty, prompt or use known value
+if [ -z "$HOST_IP" ]; then
+  echo "⚠️  Could not auto-detect HOST_IP"
+  echo "Using default: 13.203.223.245"
+  echo "If this is incorrect, edit .env file manually"
+  HOST_IP="13.203.223.245"
+fi
 
 # Create .env file
 cat > .env << EOF
