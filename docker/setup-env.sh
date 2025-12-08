@@ -6,8 +6,37 @@ set -e
 
 cd "$(dirname "$0")"
 
-# Source get-ips.sh to detect IPs
-source ./get-ips.sh
+# Get IPs by running get-ips.sh and capturing output
+# This works better with sudo since we're not relying on exported variables
+IP_OUTPUT=$(bash ./get-ips.sh 2>/dev/null || true)
+
+# Extract LOCAL_IP and HOST_IP from output
+LOCAL_IP=$(echo "$IP_OUTPUT" | grep "^LOCAL_IP=" | cut -d'=' -f2 | tr -d '\n')
+HOST_IP=$(echo "$IP_OUTPUT" | grep "^HOST_IP=" | cut -d'=' -f2 | tr -d '\n')
+
+# If still empty, try direct detection
+if [ -z "$LOCAL_IP" ]; then
+  # Try AWS metadata
+  if curl -s --max-time 2 http://169.254.169.254/latest/meta-data/local-ipv4 > /dev/null 2>&1; then
+    LOCAL_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+  # Extract from hostname
+  elif HOSTNAME=$(hostname 2>/dev/null) && echo "$HOSTNAME" | grep -q "^ip-"; then
+    LOCAL_IP=$(echo "$HOSTNAME" | sed 's/^ip-//' | sed 's/-/./g')
+  # Get from hostname -I
+  elif HOSTNAME_IP=$(hostname -I 2>/dev/null | awk '{print $1}') && [ -n "$HOSTNAME_IP" ]; then
+    LOCAL_IP="$HOSTNAME_IP"
+  fi
+fi
+
+if [ -z "$HOST_IP" ]; then
+  # Try AWS metadata
+  if curl -s --max-time 2 http://169.254.169.254/latest/meta-data/public-ipv4 > /dev/null 2>&1; then
+    HOST_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+  # Try external service
+  else
+    HOST_IP=$(curl -s --max-time 5 http://ipecho.net/plain 2>/dev/null || curl -s --max-time 5 http://ifconfig.me 2>/dev/null || curl -s --max-time 5 http://icanhazip.com 2>/dev/null || echo "")
+  fi
+fi
 
 if [ -z "$LOCAL_IP" ]; then
   echo "ERROR: Could not detect LOCAL_IP"
