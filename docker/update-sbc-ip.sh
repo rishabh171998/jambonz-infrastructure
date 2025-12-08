@@ -46,7 +46,24 @@ DB_NAME="${DB_NAME:-jambones}"
 
 # Update all SBC addresses to use the current public IP
 # This updates existing records and creates a new one if none exist
-docker-compose exec -T mysql mysql -h127.0.0.1 -u"$DB_USER" -p"$DB_PASS" "$DB_NAME" <<EOF
+
+# Try docker compose (newer) first, fallback to docker-compose (older)
+if command -v docker &> /dev/null && docker compose version &> /dev/null; then
+  DOCKER_CMD="docker compose"
+elif command -v docker-compose &> /dev/null; then
+  DOCKER_CMD="docker-compose"
+else
+  echo "ERROR: Neither 'docker compose' nor 'docker-compose' found"
+  exit 1
+fi
+
+# Check if we need sudo (permission denied usually means user not in docker group)
+if ! $DOCKER_CMD ps &> /dev/null; then
+  echo "WARNING: Permission denied for Docker. Trying with sudo..."
+  DOCKER_CMD="sudo $DOCKER_CMD"
+fi
+
+$DOCKER_CMD exec -T mysql mysql -h127.0.0.1 -u"$DB_USER" -p"$DB_PASS" "$DB_NAME" <<EOF
 -- Delete old example/test IPs
 DELETE FROM sbc_addresses WHERE ipv4 IN ('52.55.111.178', '3.34.102.122', '127.0.0.1', 'localhost');
 
