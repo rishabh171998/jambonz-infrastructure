@@ -24,8 +24,8 @@ echo "drachtio-sbc: Using HOST_IP=${HOST_IP} for external-ip"
 # This matches the proven Packer configuration
 # Note: TLS is omitted as it requires certificates and the public IP binding fails in Docker
 exec drachtio \
-  --contact "sip:${LOCAL_IP};transport=udp" \
-  --contact "sip:${LOCAL_IP};transport=tcp" \
+  --contact "sip:${LOCAL_IP}:5060;transport=udp" \
+  --contact "sip:${LOCAL_IP}:5060;transport=tcp" \
   --external-ip "${HOST_IP}" \
   --address "0.0.0.0" \
   --port "9022" \
