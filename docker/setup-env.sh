@@ -78,25 +78,45 @@ echo ""
 
 # Create or update .env file (handle permissions)
 ENV_FILE=".env"
-TEMP_FILE=".env.tmp"
+TEMP_FILE=$(mktemp .env.XXXXXX 2>/dev/null || echo ".env.tmp.$$")
 
 # Create temp file with new values
 if [ -f "$ENV_FILE" ]; then
   # Copy existing file, remove old LOCAL_IP and HOST_IP lines
-  grep -v "^LOCAL_IP=" "$ENV_FILE" | grep -v "^HOST_IP=" > "$TEMP_FILE" 2>/dev/null || true
+  grep -v "^LOCAL_IP=" "$ENV_FILE" 2>/dev/null | grep -v "^HOST_IP=" > "$TEMP_FILE" 2>/dev/null || true
 else
-  touch "$TEMP_FILE"
+  # Create empty temp file
+  > "$TEMP_FILE"
 fi
 
-# Append the IPs
-echo "LOCAL_IP=${LOCAL_IP}" >> "$TEMP_FILE"
-echo "HOST_IP=${HOST_IP}" >> "$TEMP_FILE"
+# Append the IPs to temp file
+{
+  echo "LOCAL_IP=${LOCAL_IP}"
+  echo "HOST_IP=${HOST_IP}"
+} >> "$TEMP_FILE"
 
-# Move temp file to .env (this handles permissions)
-mv "$TEMP_FILE" "$ENV_FILE"
-
-# Fix permissions if needed
-chmod 644 "$ENV_FILE" 2>/dev/null || true
+# Check if .env file exists and if we have write permissions
+if [ -f "$ENV_FILE" ] && [ ! -w "$ENV_FILE" ]; then
+  echo "⚠️  .env file is not writable. Trying with sudo..."
+  # Use sudo to move the file
+  sudo mv "$TEMP_FILE" "$ENV_FILE" 2>/dev/null || {
+    echo "ERROR: Could not write to .env file (permission denied)"
+    echo "Please run with sudo or fix permissions:"
+    echo "  sudo chown \$USER:\$USER .env"
+    rm -f "$TEMP_FILE" 2>/dev/null
+    exit 1
+  }
+  sudo chmod 644 "$ENV_FILE" 2>/dev/null || true
+  sudo chown "$USER:$USER" "$ENV_FILE" 2>/dev/null || true
+else
+  # Normal move (handles permissions)
+  mv "$TEMP_FILE" "$ENV_FILE" 2>/dev/null || {
+    echo "ERROR: Could not write to .env file"
+    rm -f "$TEMP_FILE" 2>/dev/null
+    exit 1
+  }
+  chmod 644 "$ENV_FILE" 2>/dev/null || true
+fi
 
 echo "✅ Updated .env file with:"
 echo "   LOCAL_IP=${LOCAL_IP}"
