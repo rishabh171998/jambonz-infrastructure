@@ -21,12 +21,26 @@ HOST_IP=$(echo "$IP_OUTPUT" | grep "^HOST_IP=" | cut -d'=' -f2 | tr -d '\n')
 LOCAL_IP="172.10.0.10"
 
 if [ -z "$HOST_IP" ]; then
-  # Try AWS metadata
-  if curl -s --max-time 2 http://169.254.169.254/latest/meta-data/public-ipv4 > /dev/null 2>&1; then
-    HOST_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-  # Try external service
+  echo "Attempting to detect HOST_IP..."
+  
+  # Try AWS metadata service first (returns Elastic IP if associated, otherwise public IP)
+  AWS_IP=$(curl -s --max-time 5 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo "")
+  
+  if [ -n "$AWS_IP" ] && [[ "$AWS_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    HOST_IP="$AWS_IP"
+    echo "  ✓ Detected from AWS metadata: $HOST_IP"
   else
-    HOST_IP=$(curl -s --max-time 5 http://ipecho.net/plain 2>/dev/null || curl -s --max-time 5 http://ifconfig.me 2>/dev/null || curl -s --max-time 5 http://icanhazip.com 2>/dev/null || echo "")
+    # Try external services as fallback
+    echo "  Trying external services..."
+    HOST_IP=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null || \
+              curl -s --max-time 5 https://ifconfig.me 2>/dev/null || \
+              curl -s --max-time 5 http://icanhazip.com 2>/dev/null || \
+              curl -s --max-time 5 http://ipecho.net/plain 2>/dev/null || \
+              echo "")
+    
+    if [ -n "$HOST_IP" ] && [[ "$HOST_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      echo "  ✓ Detected from external service: $HOST_IP"
+    fi
   fi
 fi
 
@@ -38,11 +52,23 @@ if [ -z "$LOCAL_IP" ]; then
   exit 1
 fi
 
-if [ -z "$HOST_IP" ]; then
-  echo "ERROR: Could not detect HOST_IP"
-  echo "Please set it manually:"
-  echo "  export HOST_IP=13.203.223.245"
-  exit 1
+# If still no HOST_IP, prompt user
+if [ -z "$HOST_IP" ] || [[ ! "$HOST_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo ""
+  echo "⚠️  Could not automatically detect HOST_IP"
+  echo ""
+  echo "Please enter your Elastic IP or public IP address:"
+  read -p "HOST_IP: " HOST_IP
+  
+  # Validate input
+  if [ -z "$HOST_IP" ] || [[ ! "$HOST_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo ""
+    echo "ERROR: Invalid IP address format"
+    echo "Please set it manually:"
+    echo "  export HOST_IP=your-elastic-ip"
+    echo "  ./setup-env.sh"
+    exit 1
+  fi
 fi
 
 echo "Detected IPs:"
