@@ -78,7 +78,7 @@ echo ""
 
 # Create or update .env file (handle permissions)
 ENV_FILE=".env"
-TEMP_FILE=$(mktemp .env.XXXXXX 2>/dev/null || echo ".env.tmp.$$")
+TEMP_FILE=$(mktemp /tmp/jambonz-env.XXXXXX 2>/dev/null || echo "/tmp/jambonz-env.$$")
 
 # Create temp file with new values
 if [ -f "$ENV_FILE" ]; then
@@ -98,8 +98,8 @@ fi
 # Check if .env file exists and if we have write permissions
 if [ -f "$ENV_FILE" ] && [ ! -w "$ENV_FILE" ]; then
   echo "⚠️  .env file is not writable. Trying with sudo..."
-  # Use sudo to move the file
-  sudo mv "$TEMP_FILE" "$ENV_FILE" 2>/dev/null || {
+  # Use sudo to copy the file
+  sudo cp "$TEMP_FILE" "$ENV_FILE" 2>/dev/null || {
     echo "ERROR: Could not write to .env file (permission denied)"
     echo "Please run with sudo or fix permissions:"
     echo "  sudo chown \$USER:\$USER .env"
@@ -109,14 +109,17 @@ if [ -f "$ENV_FILE" ] && [ ! -w "$ENV_FILE" ]; then
   sudo chmod 644 "$ENV_FILE" 2>/dev/null || true
   sudo chown "$USER:$USER" "$ENV_FILE" 2>/dev/null || true
 else
-  # Normal move (handles permissions)
-  mv "$TEMP_FILE" "$ENV_FILE" 2>/dev/null || {
+  # Normal copy (handles permissions)
+  cp "$TEMP_FILE" "$ENV_FILE" 2>/dev/null || {
     echo "ERROR: Could not write to .env file"
     rm -f "$TEMP_FILE" 2>/dev/null
     exit 1
   }
   chmod 644 "$ENV_FILE" 2>/dev/null || true
 fi
+
+# Clean up temp file
+rm -f "$TEMP_FILE" 2>/dev/null || true
 
 echo "✅ Updated .env file with:"
 echo "   LOCAL_IP=${LOCAL_IP}"
