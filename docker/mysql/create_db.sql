@@ -20,6 +20,8 @@ DROP TABLE IF EXISTS lcr_carrier_set_entry;
 
 DROP TABLE IF EXISTS lcr_routes;
 
+DROP TABLE IF EXISTS lcr;
+
 DROP TABLE IF EXISTS password_settings;
 
 DROP TABLE IF EXISTS user_permissions;

@@ -72,16 +72,35 @@ else
   exit 1
 fi
 
-# Create indexes
+# Create indexes (check if they exist first since MySQL doesn't support IF NOT EXISTS)
 echo ""
 echo "Creating indexes..."
-$DOCKER_CMD exec -T mysql mysql -ujambones -pjambones jambones <<EOF
-CREATE INDEX IF NOT EXISTS lcr_sid_idx ON lcr (lcr_sid);
-CREATE INDEX IF NOT EXISTS service_provider_sid_idx ON lcr (service_provider_sid);
-CREATE INDEX IF NOT EXISTS account_sid_idx ON lcr (account_sid);
-EOF
 
-echo "✅ Indexes created"
+# Check and create lcr_sid_idx
+INDEX_EXISTS=$($DOCKER_CMD exec -T mysql mysql -ujambones -pjambones jambones -N -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = 'jambones' AND table_name = 'lcr' AND index_name = 'lcr_sid_idx'" 2>/dev/null || echo "0")
+if [ "$INDEX_EXISTS" = "0" ]; then
+  $DOCKER_CMD exec -T mysql mysql -ujambones -pjambones jambones -e "CREATE INDEX lcr_sid_idx ON lcr (lcr_sid)" 2>/dev/null && echo "  ✓ Created lcr_sid_idx" || echo "  ⚠️  Failed to create lcr_sid_idx"
+else
+  echo "  ✓ lcr_sid_idx already exists"
+fi
+
+# Check and create service_provider_sid_idx
+INDEX_EXISTS=$($DOCKER_CMD exec -T mysql mysql -ujambones -pjambones jambones -N -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = 'jambones' AND table_name = 'lcr' AND index_name = 'service_provider_sid_idx'" 2>/dev/null || echo "0")
+if [ "$INDEX_EXISTS" = "0" ]; then
+  $DOCKER_CMD exec -T mysql mysql -ujambones -pjambones jambones -e "CREATE INDEX service_provider_sid_idx ON lcr (service_provider_sid)" 2>/dev/null && echo "  ✓ Created service_provider_sid_idx" || echo "  ⚠️  Failed to create service_provider_sid_idx"
+else
+  echo "  ✓ service_provider_sid_idx already exists"
+fi
+
+# Check and create account_sid_idx
+INDEX_EXISTS=$($DOCKER_CMD exec -T mysql mysql -ujambones -pjambones jambones -N -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = 'jambones' AND table_name = 'lcr' AND index_name = 'account_sid_idx'" 2>/dev/null || echo "0")
+if [ "$INDEX_EXISTS" = "0" ]; then
+  $DOCKER_CMD exec -T mysql mysql -ujambones -pjambones jambones -e "CREATE INDEX account_sid_idx ON lcr (account_sid)" 2>/dev/null && echo "  ✓ Created account_sid_idx" || echo "  ⚠️  Failed to create account_sid_idx"
+else
+  echo "  ✓ account_sid_idx already exists"
+fi
+
+echo "✅ Indexes created/verified"
 echo ""
 
 # Try to add foreign key (may fail if lcr_carrier_set_entry table is empty, which is OK)
