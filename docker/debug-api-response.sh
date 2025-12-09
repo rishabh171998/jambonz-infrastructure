@@ -51,13 +51,63 @@ echo "Account SID: $ACCOUNT_SID"
 echo "API Endpoint: http://${HOST_IP}:3000/v1/Accounts/${ACCOUNT_SID}/RecentCalls?page=1&count=25"
 echo ""
 
-# Make API call and save response
-RESPONSE=$(curl -s -H "Authorization: Bearer $API_KEY" \
-  "http://${HOST_IP}:3000/v1/Accounts/${ACCOUNT_SID}/RecentCalls?page=1&count=25" 2>/dev/null || echo "ERROR")
+# Verify API key exists and matches account
+if [ -z "$API_KEY" ]; then
+  echo "⚠️  No API key found for this account"
+  echo "   Creating a test API key..."
+  
+  # Create API key via API (if possible) or directly in DB
+  API_KEY=$(uuidgen | tr '[:upper:]' '[:lower:]' | tr -d '\n')
+  $DOCKER_CMD exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+INSERT INTO api_keys (api_key_sid, token, account_sid, created_at)
+VALUES (UUID(), '$API_KEY', '$ACCOUNT_SID', NOW())
+ON DUPLICATE KEY UPDATE token = '$API_KEY';
+EOF
+  echo "   Created API key: ${API_KEY:0:8}..."
+else
+  echo "✅ API key found: ${API_KEY:0:8}..."
+  
+  # Verify API key is not expired
+  EXPIRED=$($DOCKER_CMD exec -T mysql mysql -ujambones -pjambones jambones -N -e "SELECT COUNT(*) FROM api_keys WHERE token = '$API_KEY' AND (expires_at IS NULL OR expires_at > NOW())" 2>/dev/null || echo "0")
+  if [ "$EXPIRED" = "0" ]; then
+    echo "⚠️  API key may be expired"
+  fi
+fi
+echo ""
 
-if [ "$RESPONSE" = "ERROR" ]; then
+# Test without auth first to see the error
+echo "Testing endpoint without authentication (to see error message)..."
+NO_AUTH_CODE=$(curl -s -o /tmp/api_no_auth.json -w "%{http_code}" \
+  "http://${HOST_IP}:3000/v1/Accounts/${ACCOUNT_SID}/RecentCalls?page=1&count=25" 2>/dev/null || echo "000")
+NO_AUTH_RESPONSE=$(cat /tmp/api_no_auth.json 2>/dev/null || echo "")
+
+if [ "$NO_AUTH_CODE" = "401" ] || [ "$NO_AUTH_CODE" = "403" ]; then
+  echo "✅ Endpoint requires authentication (expected)"
+else
+  echo "⚠️  Endpoint returned: $NO_AUTH_CODE"
+  echo "   Response: $NO_AUTH_RESPONSE"
+fi
+echo ""
+
+# Make API call with authentication
+echo "Testing with authentication..."
+HTTP_CODE=$(curl -s -o /tmp/api_response.json -w "%{http_code}" \
+  -H "Authorization: Bearer $API_KEY" \
+  "http://${HOST_IP}:3000/v1/Accounts/${ACCOUNT_SID}/RecentCalls?page=1&count=25" 2>/dev/null || echo "000")
+
+RESPONSE=$(cat /tmp/api_response.json 2>/dev/null || echo "ERROR")
+
+if [ "$HTTP_CODE" = "000" ]; then
   echo "❌ Failed to connect to API"
   exit 1
+fi
+
+echo "HTTP Status Code: $HTTP_CODE"
+echo ""
+
+if [ "$HTTP_CODE" != "200" ]; then
+  echo "⚠️  API returned non-200 status: $HTTP_CODE"
+  echo ""
 fi
 
 echo "Raw API Response:"
@@ -67,7 +117,7 @@ echo "=========================================="
 echo ""
 
 # Check if it's valid JSON
-if echo "$RESPONSE" | python3 -m json.tool > /dev/null 2>&1; then
+if [ "$HTTP_CODE" = "200" ] && echo "$RESPONSE" | python3 -m json.tool > /dev/null 2>&1; then
   echo "✅ Response is valid JSON"
   echo ""
   
@@ -114,8 +164,19 @@ except Exception as e:
     print('Error parsing JSON:', e)
 " 2>/dev/null || echo "Could not parse JSON structure"
 else
-  echo "❌ Response is not valid JSON"
-  echo "This might be an error page or HTML response"
+  if [ "$HTTP_CODE" != "200" ]; then
+    echo "❌ API returned HTTP $HTTP_CODE"
+    echo "Response: $RESPONSE"
+    echo ""
+    echo "Common causes:"
+    echo "  - 400 Bad Request: Missing required parameters or invalid request"
+    echo "  - 401 Unauthorized: Invalid or missing API key"
+    echo "  - 403 Forbidden: API key doesn't have permission"
+    echo "  - 404 Not Found: Account not found"
+  else
+    echo "❌ Response is not valid JSON"
+    echo "This might be an error page or HTML response"
+  fi
 fi
 
 echo ""
