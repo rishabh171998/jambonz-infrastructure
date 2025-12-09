@@ -4,8 +4,42 @@
 
 set -e  # Exit on error
 
+# Get the directory where the script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Check for prune flag
+PRUNE_DOCKER=false
+if [ "$1" == "--prune" ] || [ "$1" == "-p" ]; then
+  PRUNE_DOCKER=true
+fi
+
 echo "=== Restarting all Jambonz services ==="
-cd /opt/jambonz-infrastructure/docker
+echo ""
+
+if [ "$PRUNE_DOCKER" = true ]; then
+  echo "⚠️  WARNING: This will remove all unused Docker images, containers, and volumes!"
+  echo "   This includes:"
+  echo "   - All stopped containers"
+  echo "   - All unused images"
+  echo "   - All unused volumes"
+  echo "   - All unused networks"
+  echo ""
+  read -p "Are you sure you want to continue? (yes/no) " -r
+  if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
+    echo "Cancelled. Restarting without prune..."
+  else
+    echo ""
+    echo "=== Pruning Docker system ==="
+    sudo docker system prune -a --volumes --force
+    echo "✓ Docker system pruned"
+    echo ""
+  fi
+fi
+
+echo ""
+echo "=== Pulling latest images ==="
+sudo docker compose pull
 
 echo ""
 echo "=== Stopping all services ==="
@@ -102,6 +136,62 @@ EOF
     echo "  ✓ enable_debug_log column added"
 fi
 
+# Create lcr table (if not exists)
+echo "Checking lcr table..."
+if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE lcr" > /dev/null 2>&1; then
+    echo "  ✓ lcr table already exists"
+else
+    echo "  Creating lcr table..."
+    sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+CREATE TABLE IF NOT EXISTS lcr
+(
+  lcr_sid CHAR(36) NOT NULL UNIQUE,
+  name VARCHAR(64) COMMENT 'User-assigned name for this LCR table',
+  is_active BOOLEAN NOT NULL DEFAULT 1,
+  default_carrier_set_entry_sid CHAR(36) COMMENT 'default carrier/route to use when no digit match based results are found.',
+  service_provider_sid CHAR(36),
+  account_sid CHAR(36),
+  PRIMARY KEY (lcr_sid)
+) COMMENT='An LCR (least cost routing) table that is used by a service provider';
+EOF
+    echo "  ✓ lcr table created"
+    
+    # Create indexes for lcr table
+    echo "  Creating indexes for lcr table..."
+    sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+DELIMITER //
+CREATE PROCEDURE CreateIndexIfNotExists(IN tableName VARCHAR(255), IN indexName VARCHAR(255), IN indexColumns VARCHAR(255))
+BEGIN
+    IF NOT EXISTS (SELECT * FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = tableName AND index_name = indexName) THEN
+        SET @s = CONCAT('CREATE INDEX ', indexName, ' ON ', tableName, ' (', indexColumns, ')');
+        PREPARE stmt FROM @s;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END //
+DELIMITER ;
+
+CALL CreateIndexIfNotExists('lcr', 'lcr_sid_idx', 'lcr_sid');
+CALL CreateIndexIfNotExists('lcr', 'service_provider_sid_idx', 'service_provider_sid');
+CALL CreateIndexIfNotExists('lcr', 'account_sid_idx', 'account_sid');
+
+DROP PROCEDURE IF EXISTS CreateIndexIfNotExists;
+EOF
+    echo "  ✓ lcr indexes created"
+    
+    # Add foreign key to lcr_routes if missing
+    echo "  Checking lcr_routes foreign key..."
+    if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'FOREIGN KEY' AND TABLE_NAME = 'lcr_routes' AND REFERENCED_TABLE_NAME = 'lcr';" 2>/dev/null | grep -q "lcr_sid_idxfk"; then
+        echo "  ✓ Foreign key lcr_sid_idxfk already exists"
+    else
+        echo "  Adding foreign key to lcr_routes..."
+        sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+ALTER TABLE lcr_routes ADD CONSTRAINT lcr_sid_idxfk FOREIGN KEY (lcr_sid) REFERENCES lcr (lcr_sid);
+EOF
+        echo "  ✓ Foreign key added to lcr_routes"
+    fi
+fi
+
 # Enable CDRs for default account
 echo "Enabling CDRs for default account..."
 sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
@@ -164,10 +254,29 @@ sudo docker compose logs sbc-inbound --tail 3 | grep -q "listening\|connected" &
 echo ""
 echo "=== Setup Complete ==="
 echo ""
-echo "Services are available at:"
-echo "  - Webapp: http://\${HOST_IP}:3001"
-echo "  - API Server: http://\${HOST_IP}:3000"
-echo "  - Jaeger UI: http://\${HOST_IP}:16686"
+echo "✅ All services restarted and configured"
 echo ""
-echo "To view logs: sudo docker compose logs -f [service-name]"
-echo "To check service status: sudo docker compose ps"
+echo "Services are available at:"
+if [ -f .env ]; then
+    HOST_IP=$(grep "^HOST_IP=" .env | cut -d'=' -f2 | tr -d '\n' || echo "localhost")
+else
+    HOST_IP="localhost"
+fi
+echo "  - Webapp: http://${HOST_IP}:3001"
+echo "  - API Server: http://${HOST_IP}:3000"
+echo "  - Jaeger UI: http://${HOST_IP}:16686"
+echo ""
+echo "Database migrations applied:"
+echo "  ✓ pad_crypto column (sip_gateways)"
+echo "  ✓ record_all_calls, record_format, bucket_credential, enable_debug_log (accounts)"
+echo "  ✓ lcr table and indexes"
+echo ""
+echo "Recording WebSocket configured:"
+echo "  ✓ JAMBONZ_RECORD_WS_BASE_URL set in feature-server"
+echo "  ✓ JAMBONZ_RECORD_WS_USERNAME/PASSWORD configured"
+echo ""
+echo "Useful commands:"
+echo "  - View logs: sudo docker compose logs -f [service-name]"
+echo "  - Check status: sudo docker compose ps"
+echo "  - Restart with prune: ./restart-all.sh --prune"
+echo ""
