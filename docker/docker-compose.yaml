@@ -86,7 +86,7 @@ services:
         ipv4_address: 172.10.0.10
 
   rtpengine:
-    image: drachtio/rtpengine:jambonz-test
+    image: jambonz/rtpengine:latest
     restart: always
     command: ["rtpengine", "--interface", "private/172.10.0.11", "--interface", "public/172.10.0.11!${HOST_IP}", "--log-level", "5"]
     ports:
