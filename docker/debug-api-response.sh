@@ -78,20 +78,38 @@ import json, sys
 try:
     data = json.load(sys.stdin)
     print('Keys in response:', list(data.keys()))
+    
+    # Check for expected fields per OpenAPI spec
+    expected_fields = ['total', 'batch', 'page', 'data']
+    missing_fields = [f for f in expected_fields if f not in data]
+    if missing_fields:
+        print('⚠️  Missing expected fields:', missing_fields)
+    
+    # Check for unexpected fields
+    if 'page_size' in data:
+        print('⚠️  Found \"page_size\" but spec expects \"batch\"')
+        print('   page_size value:', data['page_size'])
+    
     if 'data' in data:
         print('data type:', type(data['data']).__name__)
         if isinstance(data['data'], list):
-            print('data length:', len(data['data']))
+            print('✅ data is an array (length:', len(data['data']), ')')
             if len(data['data']) > 0:
                 print('First item keys:', list(data['data'][0].keys()) if isinstance(data['data'][0], dict) else 'Not a dict')
         else:
-            print('data value:', data['data'])
+            print('❌ data is NOT an array:', type(data['data']).__name__)
+            print('   data value:', data['data'])
     else:
         print('❌ No \"data\" key in response')
+    
     if 'page' in data:
-        print('page:', data['page'])
+        print('page:', data['page'], '(type:', type(data['page']).__name__, ')')
+        if isinstance(data['page'], str):
+            print('⚠️  page is a string, should be number per spec')
     if 'total' in data:
-        print('total:', data['total'])
+        print('total:', data['total'], '(type:', type(data['total']).__name__, ')')
+    if 'batch' in data:
+        print('batch:', data['batch'], '(type:', type(data['batch']).__name__, ')')
 except Exception as e:
     print('Error parsing JSON:', e)
 " 2>/dev/null || echo "Could not parse JSON structure"
