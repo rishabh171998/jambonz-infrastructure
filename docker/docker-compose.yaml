@@ -88,10 +88,12 @@ services:
   rtpengine:
     image: drachtio/rtpengine:jambonz-test
     restart: always
-    network_mode: host
-    command: ["rtpengine", "--interface", "private/127.0.0.1", "--interface", "public/0.0.0.0!${HOST_IP}", "--listen-ng", "0.0.0.0:22222", "--port-min", "10000", "--port-max", "60000", "--log-level", "5"]
-    # Using host networking to avoid Docker port range limitations
-    # Other containers connect via bridge gateway IP (172.10.0.1:222226
+    command: ["rtpengine", "--interface", "private/172.10.0.11", "--interface", "public/172.10.0.11!${HOST_IP}", "--port-min", "10000", "--port-max", "60000", "--log-level", "5"]
+    ports:
+      - "10000-60000:10000-60000/udp"
+    networks:
+      jambonz:
+        ipv4_address: 172.10.0.11
 
   api-server:
     image: jambonz/api-server:latest
