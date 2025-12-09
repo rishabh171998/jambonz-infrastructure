@@ -385,6 +385,9 @@ smpp_inbound_password VARCHAR(64),
 register_from_user VARCHAR(128),
 register_from_domain VARCHAR(255),
 register_public_ip_in_contact BOOLEAN NOT NULL DEFAULT false,
+dtmf_type ENUM('rfc2833','tones','info') NOT NULL DEFAULT 'rfc2833' COMMENT 'DTMF type for outbound calls: rfc2833 (RFC 2833), tones (in-band), or info (SIP INFO)',
+outbound_sip_proxy VARCHAR(255) COMMENT 'Optional SIP proxy for outbound calls',
+trunk_type ENUM('static_ip','auth','reg') NOT NULL DEFAULT 'static_ip' COMMENT 'Trunk authentication type: static_ip (IP whitelist), auth (SIP auth), or reg (SIP registration)',
 PRIMARY KEY (voip_carrier_sid)
 ) COMMENT='A Carrier or customer PBX that can send or receive calls';
 

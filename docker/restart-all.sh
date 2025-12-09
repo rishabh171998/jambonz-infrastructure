@@ -136,6 +136,44 @@ EOF
     echo "  ✓ enable_debug_log column added"
 fi
 
+# Add missing columns to voip_carriers table (if not exists)
+echo "Checking voip_carriers table columns..."
+if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE voip_carriers" 2>/dev/null | grep -q "^dtmf_type"; then
+    echo "  ✓ dtmf_type column already exists"
+else
+    echo "  Adding dtmf_type column..."
+    sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+ALTER TABLE voip_carriers 
+ADD COLUMN dtmf_type ENUM('rfc2833','tones','info') NOT NULL DEFAULT 'rfc2833' 
+COMMENT 'DTMF type for outbound calls: rfc2833 (RFC 2833), tones (in-band), or info (SIP INFO)';
+EOF
+    echo "  ✓ dtmf_type column added"
+fi
+
+if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE voip_carriers" 2>/dev/null | grep -q "^outbound_sip_proxy"; then
+    echo "  ✓ outbound_sip_proxy column already exists"
+else
+    echo "  Adding outbound_sip_proxy column..."
+    sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+ALTER TABLE voip_carriers 
+ADD COLUMN outbound_sip_proxy VARCHAR(255) 
+COMMENT 'Optional SIP proxy for outbound calls';
+EOF
+    echo "  ✓ outbound_sip_proxy column added"
+fi
+
+if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE voip_carriers" 2>/dev/null | grep -q "^trunk_type"; then
+    echo "  ✓ trunk_type column already exists"
+else
+    echo "  Adding trunk_type column..."
+    sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+ALTER TABLE voip_carriers 
+ADD COLUMN trunk_type ENUM('static_ip','auth','reg') NOT NULL DEFAULT 'static_ip' 
+COMMENT 'Trunk authentication type: static_ip (IP whitelist), auth (SIP auth), or reg (SIP registration)';
+EOF
+    echo "  ✓ trunk_type column added"
+fi
+
 # Create lcr table (if not exists)
 echo "Checking lcr table..."
 if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE lcr" > /dev/null 2>&1; then
