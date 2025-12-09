@@ -104,6 +104,8 @@ services:
       <<: *common-variables
       HTTP_PORT: 3000
       JAEGER_BASE_URL: 'http://jaeger:16686'
+      JAMBONZ_RECORD_WS_USERNAME: 'jambonz'
+      JAMBONZ_RECORD_WS_PASSWORD: '5a3e38b5-3188-4936-89c9-fb0df3138b5c'
     depends_on:
       mysql:
         condition: service_healthy
@@ -252,6 +254,9 @@ services:
       HTTP_PORT: 3000
       JAMBONES_SBCS: drachtio-sbc
       JAMBONES_FREESWITCH: freeswitch:8021:JambonzR0ck$
+      JAMBONZ_RECORD_WS_BASE_URL: 'ws://api-server:3000/api/v1'
+      JAMBONZ_RECORD_WS_USERNAME: 'jambonz'
+      JAMBONZ_RECORD_WS_PASSWORD: '5a3e38b5-3188-4936-89c9-fb0df3138b5c'
     depends_on:
       - mysql
       - redis
