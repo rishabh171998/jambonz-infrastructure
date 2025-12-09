@@ -88,9 +88,9 @@ services:
   rtpengine:
     image: drachtio/rtpengine:jambonz-test
     restart: always
-    command: ["rtpengine", "--interface", "private/172.10.0.11", "--interface", "public/172.10.0.11!${HOST_IP}", "--port-min", "10000", "--port-max", "60000", "--listen-ng", "172.10.0.11:22222", "--log-level", "5"]
+    command: ["rtpengine", "--interface", "private/172.10.0.11", "--interface", "public/172.10.0.11!${HOST_IP}", "--log-level", "5"]
     ports:
-      - "40000-60000:40000-60000/udp"
+      - "40000-40100:40000-40100/udp"
     networks:
       jambonz:
         ipv4_address: 172.10.0.11
