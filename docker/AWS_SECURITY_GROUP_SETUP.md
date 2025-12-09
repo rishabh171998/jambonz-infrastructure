@@ -15,9 +15,9 @@
 #### RTP Media (Required)
 | Type | Protocol | Port Range | Source | Description |
 |------|----------|------------|--------|-------------|
-| Custom UDP | UDP | 40000-60000 | `0.0.0.0/0` or specific CIDR | RTP media streams |
+| Custom UDP | UDP | 10000-70000 | `0.0.0.0/0` or specific CIDR | RTP media streams |
 
-**Note:** Your docker-compose.yaml uses `40000-40100`, but you may want to expand this range for production.
+**Note:** The port range 10000-70000 (60K ports) provides universal compatibility with all SIP trunking providers (Exotel, Twilio, Voxbone, Simwood, TelecomsXChange, etc.). Each call uses 2 ports, supporting up to 30,000 concurrent calls with buffer.
 
 #### HTTP/HTTPS (Required for Web Access)
 | Type | Protocol | Port Range | Source | Description |
@@ -71,7 +71,7 @@ Click **Add Rule** for each rule below:
 - Type: `Custom TCP`, Port: `8443`, Source: `0.0.0.0/0` (optional, for WSS)
 
 **RTP Rules:**
-- Type: `Custom UDP`, Port Range: `40000-60000`, Source: `0.0.0.0/0`
+- Type: `Custom UDP`, Port Range: `10000-70000`, Source: `0.0.0.0/0` (Universal range for all providers)
 
 **HTTP/HTTPS Rules:**
 - Type: `HTTP`, Port: `80`, Source: `0.0.0.0/0` (or specific CIDR)
@@ -132,13 +132,13 @@ aws ec2 authorize-security-group-ingress \
   --port 5061 \
   --cidr 0.0.0.0/0
 
-# RTP UDP Range
+# RTP UDP Range (Universal range for all SIP trunking providers: 10000-70000)
 aws ec2 authorize-security-group-ingress \
   --group-id $GROUP_ID \
   --protocol udp \
-  --port 40000 \
+  --port 10000 \
   --cidr 0.0.0.0/0 \
-  --ip-permissions IpProtocol=udp,FromPort=40000,ToPort=60000,IpRanges=[{CidrIp=0.0.0.0/0}]
+  --ip-permissions IpProtocol=udp,FromPort=10000,ToPort=70000,IpRanges=[{CidrIp=0.0.0.0/0}]
 
 # HTTP
 aws ec2 authorize-security-group-ingress \
@@ -211,11 +211,11 @@ resource "aws_security_group" "jambonz_docker" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # RTP UDP Range
+  # RTP UDP Range (Universal range for all SIP trunking providers: 10000-70000)
   ingress {
     description = "RTP Media"
-    from_port   = 40000
-    to_port     = 60000
+    from_port   = 10000
+    to_port     = 70000
     protocol    = "udp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -313,7 +313,7 @@ After configuring security groups:
 nc -uv YOUR_EC2_IP 5060
 
 # Test RTP port
-nc -uv YOUR_EC2_IP 40000
+nc -uv YOUR_EC2_IP 10000
 
 # Test HTTP
 curl http://YOUR_EC2_IP:3000/health
@@ -333,7 +333,10 @@ curl http://YOUR_EC2_IP:3001
 
 ## Notes
 
-- The RTP port range (40000-60000) is large but necessary for handling multiple concurrent calls
+- The RTP port range (10000-70000) provides universal compatibility with all SIP trunking providers
+- Each call uses 2 ports (one for each direction), so 60K ports support up to 30,000 concurrent calls with buffer
+- This wide range ensures compatibility with Exotel, Twilio, Voxbone, Simwood, TelecomsXChange, and all other SIP trunking providers
 - Consider using AWS Application Load Balancer (ALB) for HTTP/HTTPS traffic instead of direct exposure
 - For production, consider restricting SIP and RTP to known carrier IPs instead of `0.0.0.0/0`
+- See [EXOTEL_VSIP_INTEGRATION.md](./EXOTEL_VSIP_INTEGRATION.md) for detailed SIP trunking integration guidelines
 
