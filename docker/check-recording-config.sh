@@ -62,15 +62,21 @@ else
   echo "$BUCKET_CREDENTIAL" | python3 -c "
 import json, sys
 try:
-    cred = json.load(sys.stdin)
-    print(f\"    Vendor: {cred.get('vendor', 'N/A')}\")
-    print(f\"    Bucket: {cred.get('name', 'N/A')}\")
-    print(f\"    Region: {cred.get('region', 'N/A')}\")
-    if 'endpoint' in cred:
-        print(f\"    Endpoint: {cred.get('endpoint', 'N/A')}\")
-except:
-    print('    (Could not parse JSON)')
-" 2>/dev/null || echo "    (Could not parse bucket credential JSON)"
+    data = sys.stdin.read()
+    if data and data.strip():
+        cred = json.loads(data)
+        print(f\"    Vendor: {cred.get('vendor', 'N/A')}\")
+        print(f\"    Bucket: {cred.get('name', 'N/A')}\")
+        print(f\"    Region: {cred.get('region', 'N/A')}\")
+        if 'endpoint' in cred:
+            print(f\"    Endpoint: {cred.get('endpoint', 'N/A')}\")
+        if 'access_key_id' in cred:
+            print(f\"    Access Key ID: {cred.get('access_key_id', 'N/A')[:8]}...\")
+    else:
+        print('    (Empty credential data)')
+except Exception as e:
+    print(f'    (Could not parse JSON: {str(e)})')
+" 2>/dev/null || echo "    (Could not parse bucket credential JSON - may be encrypted)"
 fi
 
 echo ""
@@ -108,22 +114,23 @@ echo ""
 
 # Check recent calls to see if they should have recordings
 echo "=== Recent Calls (last 5) ==="
-$DOCKER_CMD exec -T mysql mysql -ujambones -pjambones jambones -N <<EOF 2>/dev/null | while IFS=$'\t' read -r CALL_SID CALL_DATE; do
-  echo "  Call SID: $CALL_SID"
-  echo "  Date: $CALL_DATE"
-  echo "  Expected S3 path: ${CALL_DATE:0:4}/${CALL_DATE:5:2}/${CALL_DATE:8:2}/$CALL_SID.${RECORD_FORMAT:-mp3}"
-  echo ""
-done
-SELECT call_sid, DATE(attempted_at) as call_date
-FROM (
-  SELECT call_sid, attempted_at
-  FROM recent_calls
-  WHERE account_sid = '$ACCOUNT_SID'
-  ORDER BY attempted_at DESC
-  LIMIT 5
-) AS recent
-ORDER BY attempted_at DESC;
-EOF
+RECENT_CALLS=$($DOCKER_CMD exec -T mysql mysql -ujambones -pjambones jambones -N -e "SELECT call_sid, DATE(attempted_at) as call_date FROM (SELECT call_sid, attempted_at FROM recent_calls WHERE account_sid = '$ACCOUNT_SID' ORDER BY attempted_at DESC LIMIT 5) AS recent ORDER BY attempted_at DESC;" 2>/dev/null || echo "")
+
+if [ -z "$RECENT_CALLS" ]; then
+  echo "  No recent calls found"
+else
+  echo "$RECENT_CALLS" | while IFS=$'\t' read -r CALL_SID CALL_DATE; do
+    if [ -n "$CALL_SID" ] && [ -n "$CALL_DATE" ]; then
+      echo "  Call SID: $CALL_SID"
+      echo "  Date: $CALL_DATE"
+      YEAR=$(echo "$CALL_DATE" | cut -d'-' -f1)
+      MONTH=$(echo "$CALL_DATE" | cut -d'-' -f2)
+      DAY=$(echo "$CALL_DATE" | cut -d'-' -f3)
+      echo "  Expected S3 path: ${YEAR}/${MONTH}/${DAY}/$CALL_SID.${RECORD_FORMAT:-mp3}"
+      echo ""
+    fi
+  done
+fi
 
 echo ""
 
