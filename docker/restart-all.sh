@@ -46,6 +46,62 @@ EOF
     echo "  ✓ pad_crypto column added"
 fi
 
+# Add record_all_calls column to accounts table (if not exists)
+echo "Adding record_all_calls column to accounts table..."
+if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE accounts" 2>/dev/null | grep -q "record_all_calls"; then
+    echo "  record_all_calls column already exists, skipping..."
+else
+    echo "  Adding record_all_calls column..."
+    sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+ALTER TABLE accounts 
+ADD COLUMN record_all_calls BOOLEAN NOT NULL DEFAULT 0 
+COMMENT 'If true, record all calls for this account';
+EOF
+    echo "  ✓ record_all_calls column added"
+fi
+
+# Add record_format column to accounts table (if not exists)
+echo "Adding record_format column to accounts table..."
+if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE accounts" 2>/dev/null | grep -q "record_format"; then
+    echo "  record_format column already exists, skipping..."
+else
+    echo "  Adding record_format column..."
+    sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+ALTER TABLE accounts 
+ADD COLUMN record_format VARCHAR(16) NOT NULL DEFAULT 'mp3' 
+COMMENT 'Audio format for call recordings (mp3, wav, etc.)';
+EOF
+    echo "  ✓ record_format column added"
+fi
+
+# Add bucket_credential column to accounts table (if not exists)
+echo "Adding bucket_credential column to accounts table..."
+if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE accounts" 2>/dev/null | grep -q "bucket_credential"; then
+    echo "  bucket_credential column already exists, skipping..."
+else
+    echo "  Adding bucket_credential column..."
+    sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+ALTER TABLE accounts 
+ADD COLUMN bucket_credential VARCHAR(8192) 
+COMMENT 'credential used to authenticate with storage service';
+EOF
+    echo "  ✓ bucket_credential column added"
+fi
+
+# Add enable_debug_log column to accounts table (if not exists)
+echo "Adding enable_debug_log column to accounts table..."
+if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE accounts" 2>/dev/null | grep -q "enable_debug_log"; then
+    echo "  enable_debug_log column already exists, skipping..."
+else
+    echo "  Adding enable_debug_log column..."
+    sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+ALTER TABLE accounts 
+ADD COLUMN enable_debug_log BOOLEAN NOT NULL DEFAULT false 
+COMMENT 'Enable debug logging for calls in this account';
+EOF
+    echo "  ✓ enable_debug_log column added"
+fi
+
 # Enable CDRs for default account
 echo "Enabling CDRs for default account..."
 sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
