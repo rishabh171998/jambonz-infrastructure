@@ -174,6 +174,53 @@ EOF
     echo "  ✓ trunk_type column added"
 fi
 
+# Add missing columns to sip_gateways table (if not exists)
+echo "Checking sip_gateways table columns..."
+if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE sip_gateways" 2>/dev/null | grep -q "^protocol"; then
+    echo "  ✓ protocol column already exists"
+else
+    echo "  Adding protocol column..."
+    sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+ALTER TABLE sip_gateways 
+ADD COLUMN protocol ENUM('udp','tcp','tls', 'tls/srtp') DEFAULT 'udp' 
+COMMENT 'Outbound call protocol';
+EOF
+    echo "  ✓ protocol column added"
+fi
+
+if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE sip_gateways" 2>/dev/null | grep -q "^send_options_ping"; then
+    echo "  ✓ send_options_ping column already exists"
+else
+    echo "  Adding send_options_ping column..."
+    sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+ALTER TABLE sip_gateways 
+ADD COLUMN send_options_ping BOOLEAN NOT NULL DEFAULT 0;
+EOF
+    echo "  ✓ send_options_ping column added"
+fi
+
+if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE sip_gateways" 2>/dev/null | grep -q "^use_sips_scheme"; then
+    echo "  ✓ use_sips_scheme column already exists"
+else
+    echo "  Adding use_sips_scheme column..."
+    sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+ALTER TABLE sip_gateways 
+ADD COLUMN use_sips_scheme BOOLEAN NOT NULL DEFAULT 0;
+EOF
+    echo "  ✓ use_sips_scheme column added"
+fi
+
+if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE sip_gateways" 2>/dev/null | grep -q "^pad_crypto"; then
+    echo "  ✓ pad_crypto column already exists"
+else
+    echo "  Adding pad_crypto column..."
+    sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones <<EOF
+ALTER TABLE sip_gateways 
+ADD COLUMN pad_crypto BOOLEAN NOT NULL DEFAULT 0;
+EOF
+    echo "  ✓ pad_crypto column added"
+fi
+
 # Create lcr table (if not exists)
 echo "Checking lcr table..."
 if sudo docker compose exec -T mysql mysql -ujambones -pjambones jambones -e "DESCRIBE lcr" > /dev/null 2>&1; then
