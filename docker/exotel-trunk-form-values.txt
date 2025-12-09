@@ -1,0 +1,40 @@
+EXOTEL TRUNK FORM - QUICK REFERENCE
+=====================================
+
+Trunk Name:
+-----------
+Exophone
+
+Alias:
+------
+(Leave empty)
+
+Whitelist IPs:
+--------------
+IP Address: 15.207.113.122
+Subnet Mask: 32
+
+Destination URIs:
+-----------------
+Transport Protocol: TCP
+Destination IP/FQDN: +918064061518@graineone.sip.graine.ai
+Destination Port: 5060
+
+ALTERNATIVE (if form doesn't accept @ in FQDN):
+------------------------------------------------
+Transport Protocol: TCP
+Destination IP/FQDN: graineone.sip.graine.ai
+Destination Port: 5060
+[Look for separate "User" or "Phone Number" field: +918064061518]
+
+VERIFICATION:
+-------------
+After saving, check logs:
+  sudo docker compose logs -f drachtio-sbc | grep "INVITE sip:"
+
+Should see:
+  ✅ INVITE sip:+918064061518@15.207.113.122
+
+NOT:
+  ❌ INVITE sip:27270013103585148@15.207.113.122
+
