@@ -1,0 +1,48 @@
+EXOTEL DESTINATION URI - EXACT FORMAT
+=======================================
+
+Current (WRONG):
+----------------
+sip:graineone.sip.graine.ai:5060;transport=tcp
+
+Problem: Phone number missing
+
+
+Correct Format (RECOMMENDED):
+-----------------------------
+sip:8064061518@15.207.113.122:5060;transport=tcp
+
+✅ Phone number included: 8064061518
+✅ Uses IP: 15.207.113.122 (avoids SIP realm matching)
+✅ Port included: :5060;transport=tcp (required by Exotel)
+
+
+Alternative Formats (if above doesn't work):
+---------------------------------------------
+sip:+918064061518@15.207.113.122:5060;transport=tcp
+sip:918064061518@15.207.113.122:5060;transport=tcp
+sip:08064061518@15.207.113.122:5060;transport=tcp
+
+
+Steps:
+------
+1. Go to: Trunk Details → exotel → Destination URIs
+2. Click on "Destination URIs" field
+3. Change to: sip:8064061518@15.207.113.122:5060;transport=tcp
+4. Click SAVE
+5. Wait 1-2 minutes
+6. Test call
+
+
+Verification:
+-------------
+After update, check logs:
+  sudo docker compose logs -f drachtio-sbc | grep "INVITE sip:"
+
+Should see:
+  ✅ INVITE sip:8064061518@15.207.113.122
+
+NOT:
+  ❌ INVITE sip:27270013103585148@15.207.113.122 (internal ID)
+  ❌ INVITE sip:8064061518@graineone.sip.graine.ai:5060;transport=tcp (FQDN)
+
