@@ -297,22 +297,39 @@ services:
       jambonz:
         ipv4_address: 172.10.0.62
 
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: homer
+      POSTGRES_USER: homer
+      POSTGRES_PASSWORD: homer123
+    volumes:
+      - ./data_volume/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U homer"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      jambonz:
+        ipv4_address: 172.10.0.42
+
   homer:
     image: sipcapture/webapp:latest
     restart: always
     ports:
       - "9080:9080"
+    volumes:
+      - ./homer/webapp_config.json:/usr/local/homer/etc/webapp_config.json:ro
     environment:
-      DB_HOST: mysql
-      DB_USER: jambones
-      DB_PASS: jambones
+      DB_HOST: postgres
+      DB_USER: homer
+      DB_PASS: homer123
       DB_NAME: homer
-      DB_PORT: 3306
-      DB_TYPE: mysql
-      HOMER_USER: admin
-      HOMER_PASS: admin123
+      DB_PORT: 5432
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     networks:
       jambonz:
@@ -325,12 +342,13 @@ services:
       - "9060:9060/udp"
       - "3050:3050"
     environment:
-      DB_HOST: mysql
-      DB_USER: jambones
-      DB_PASS: jambones
+      DB_HOST: postgres
+      DB_USER: homer
+      DB_PASS: homer123
       DB_NAME: homer
+      DB_PORT: 5432
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       homer:
         condition: service_started

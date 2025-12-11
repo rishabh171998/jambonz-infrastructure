@@ -1,0 +1,46 @@
+{
+  "auth_settings": {
+    "token_expire": 1200,
+    "type": "internal"
+  },
+  "database_config": {
+    "host": "postgres",
+    "keepalive": true,
+    "name": "homer",
+    "node": "LocalConfig",
+    "pass": "homer123",
+    "port": 5432,
+    "user": "homer"
+  },
+  "database_data": {
+    "localnode": {
+      "host": "postgres",
+      "keepalive": true,
+      "name": "homer",
+      "node": "LocalNode",
+      "pass": "homer123",
+      "port": 5432,
+      "user": "homer"
+    }
+  },
+  "http_settings": {
+    "debug": false,
+    "gzip": true,
+    "gzip_static": true,
+    "host": "0.0.0.0",
+    "port": 80,
+    "root": "/usr/local/homer/dist"
+  },
+  "system_settings": {
+    "hostname": "homer",
+    "loglevel": "info",
+    "logname": "homer-app.log",
+    "logpath": "/usr/local/homer/log",
+    "logstdout": true
+  },
+  "transaction_settings": {
+    "deduplicate": {
+      "global": false
+    }
+  }
+}
