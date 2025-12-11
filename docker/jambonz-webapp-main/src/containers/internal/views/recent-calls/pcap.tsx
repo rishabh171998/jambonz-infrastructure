@@ -12,23 +12,49 @@ type PcapButtonProps = {
 export const PcapButton = ({ call }: PcapButtonProps) => {
   const { toastError } = useToast();
   const [pcap, setPcap] = useState<DownloadedBlob | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!pcap) {
-      getPcap(call.account_sid, call.sip_callid, "invite")
-        .then(({ blob }) => {
+    if (!pcap && !loading && !error) {
+      setLoading(true);
+      // API expects call_sid (UUID), not sip_callid
+      const callId = call.call_sid;
+      
+      if (!callId) {
+        setError("No call ID available");
+        setLoading(false);
+        return;
+      }
+
+      getPcap(call.account_sid, callId, "invite")
+        .then(({ blob, status }) => {
+          setLoading(false);
           if (blob) {
             setPcap({
               data_url: URL.createObjectURL(blob),
-              file_name: `callid-${call.sip_callid}.pcap`,
+              file_name: `callid-${callId}.pcap`,
             });
+          } else {
+            // pcap might not be available for this call
+            if (status === 400 || status === 404) {
+              setError("PCAP not available for this call");
+            } else {
+              setError("Failed to load PCAP");
+            }
           }
         })
         .catch((error) => {
-          toastError(error.msg);
+          setLoading(false);
+          const errorMsg = error.msg || error.message || "Failed to download PCAP";
+          setError(errorMsg);
+          // Only show toast for unexpected errors, not for missing pcap
+          if (!errorMsg.includes("not available") && !errorMsg.includes("404")) {
+            toastError(errorMsg);
+          }
         });
     }
-  }, []);
+  }, [call, pcap, loading, error, toastError]);
 
   if (pcap) {
     return (
@@ -39,6 +65,22 @@ export const PcapButton = ({ call }: PcapButtonProps) => {
       >
         Download pcap
       </a>
+    );
+  }
+
+  if (loading) {
+    return (
+      <span className="btn btn--small pcap" style={{ opacity: 0.6 }}>
+        Loading...
+      </span>
+    );
+  }
+
+  if (error) {
+    return (
+      <span className="btn btn--small pcap" style={{ opacity: 0.6, cursor: "not-allowed" }} title={error}>
+        PCAP unavailable
+      </span>
     );
   }
 

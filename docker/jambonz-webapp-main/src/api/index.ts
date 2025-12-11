@@ -871,11 +871,14 @@ export const getRecentCallLog = (sid: string, callSid: string) => {
   );
 };
 
-export const getPcap = (sid: string, sipCallId: string, method: string) => {
+export const getPcap = (sid: string, callId: string, method: string) => {
+  // URL encode the callId to handle special characters
+  // Note: API route is /Accounts/{sid}/RecentCalls/{call_id}/pcap (no method parameter)
+  const encodedCallId = encodeURIComponent(callId);
   return getBlob(
     import.meta.env.DEV
-      ? `${DEV_BASE_URL}/Accounts/${sid}/RecentCalls/${sipCallId}/${method}/pcap`
-      : `${API_ACCOUNTS}/${sid}/RecentCalls/${sipCallId}/${method}/pcap`,
+      ? `${DEV_BASE_URL}/Accounts/${sid}/RecentCalls/${encodedCallId}/pcap`
+      : `${API_ACCOUNTS}/${sid}/RecentCalls/${encodedCallId}/pcap`,
   );
 };
 
