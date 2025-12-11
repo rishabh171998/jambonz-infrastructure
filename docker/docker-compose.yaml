@@ -106,12 +106,17 @@ services:
       JAEGER_BASE_URL: 'http://jaeger:16686'
       JAMBONZ_RECORD_WS_USERNAME: 'jambonz'
       JAMBONZ_RECORD_WS_PASSWORD: '5a3e38b5-3188-4936-89c9-fb0df3138b5c'
+      HOMER_BASE_URL: 'http://homer:9080'
+      HOMER_USERNAME: 'admin'
+      HOMER_PASSWORD: 'admin123'
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_started
       jaeger:
+        condition: service_started
+      homer:
         condition: service_started
     networks:
       jambonz:
@@ -291,3 +296,42 @@ services:
     networks:
       jambonz:
         ipv4_address: 172.10.0.62
+
+  homer:
+    image: sipcapture/webapp:latest
+    restart: always
+    ports:
+      - "9080:9080"
+    environment:
+      DB_HOST: mysql
+      DB_USER: jambones
+      DB_PASS: jambones
+      DB_NAME: homer
+      HOMER_USER: admin
+      HOMER_PASS: admin123
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      jambonz:
+        ipv4_address: 172.10.0.40
+
+  heplify-server:
+    image: sipcapture/heplify-server:latest
+    restart: always
+    ports:
+      - "9060:9060/udp"
+      - "3050:3050"
+    environment:
+      DB_HOST: mysql
+      DB_USER: jambones
+      DB_PASS: jambones
+      DB_NAME: homer
+    depends_on:
+      mysql:
+        condition: service_healthy
+      homer:
+        condition: service_started
+    networks:
+      jambonz:
+        ipv4_address: 172.10.0.41

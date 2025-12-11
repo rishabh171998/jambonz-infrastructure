@@ -47,9 +47,18 @@ export const PcapButton = ({ call }: PcapButtonProps) => {
         .catch((error) => {
           setLoading(false);
           const errorMsg = error.msg || error.message || "Failed to download PCAP";
-          setError(errorMsg);
-          // Only show toast for unexpected errors, not for missing pcap
-          if (!errorMsg.includes("not available") && !errorMsg.includes("404")) {
+          
+          // Check if it's a Homer configuration error
+          if (error.status === 400 || errorMsg.includes("Homer") || errorMsg.includes("homer") || errorMsg.includes("API token")) {
+            setError("PCAP requires Homer to be configured");
+          } else if (error.status === 404 || errorMsg.includes("not available") || errorMsg.includes("404")) {
+            setError("PCAP not available for this call");
+          } else {
+            setError("PCAP unavailable");
+          }
+          
+          // Only show toast for unexpected errors
+          if (error.status !== 400 && error.status !== 404) {
             toastError(errorMsg);
           }
         });
