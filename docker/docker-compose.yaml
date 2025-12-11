@@ -319,9 +319,9 @@ services:
     image: sipcapture/webapp:latest
     restart: always
     ports:
-      - "9080:9080"
+      - "9080:80"
     volumes:
-      - ./homer/webapp_config.json:/usr/local/homer/etc/webapp_config.json:ro
+      - ./homer/webapp_config.json:/usr/local/homer/etc/webapp_config.json
     environment:
       DB_HOST: postgres
       DB_USER: homer
@@ -338,11 +338,12 @@ services:
   heplify-server:
     image: sipcapture/heplify-server:latest
     restart: always
+    command: ['./heplify-server', '-config', '/etc/heplify-server.toml']
     ports:
       - "9060:9060/udp"
       - "3050:3050"
     volumes:
-      - ./heplify-server.toml:/etc/heplify-server/heplify-server.toml:ro
+      - ./heplify-server.toml:/etc/heplify-server.toml:ro
     environment:
       DB_HOST: postgres
       DB_USER: homer

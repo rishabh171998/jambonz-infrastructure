@@ -46,6 +46,6 @@ LogDbg                = ""
 LogLvl                = "info"
 LogStd                = false
 LogSys                = false
-Config                = "/etc/heplify-server/heplify-server.toml"
+Config                = "/etc/heplify-server.toml"
 ConfigHTTPAddr        = ""
 
