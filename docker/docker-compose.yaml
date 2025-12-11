@@ -106,7 +106,7 @@ services:
       JAEGER_BASE_URL: 'http://jaeger:16686'
       JAMBONZ_RECORD_WS_USERNAME: 'jambonz'
       JAMBONZ_RECORD_WS_PASSWORD: '5a3e38b5-3188-4936-89c9-fb0df3138b5c'
-      HOMER_BASE_URL: 'http://homer:9080'
+      HOMER_BASE_URL: 'http://homer:80'
       HOMER_USERNAME: 'admin'
       HOMER_PASSWORD: 'admin123'
     depends_on:
