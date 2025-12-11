@@ -26,22 +26,74 @@ echo "=========================================="
 echo ""
 
 # Extract registration details from recent logs
-REGISTER_INFO=$($DOCKER_CMD logs --tail 100 drachtio-sbc 2>/dev/null | grep "REGISTER sip:" | tail -1 || echo "")
+echo "Checking recent REGISTER requests in logs..."
+REGISTER_LINES=$($DOCKER_CMD logs --tail 200 drachtio-sbc 2>/dev/null | grep -iE "register|403|forbidden" | tail -10 || echo "")
 
-if [ -z "$REGISTER_INFO" ]; then
-  echo "❌ No recent REGISTER requests found in logs"
-  echo "   Make a registration attempt first"
-  exit 1
+if [ -z "$REGISTER_LINES" ]; then
+  echo "   Checking registrar logs..."
+  REGISTER_LINES=$($DOCKER_CMD logs --tail 200 registrar 2>/dev/null | grep -iE "register|403|forbidden" | tail -10 || echo "")
 fi
 
-# Extract username and domain
-USERNAME=$(echo "$REGISTER_INFO" | grep -oE "From: \"[^\"]+\"" | sed 's/From: "//' | sed 's/"//' | head -1 || echo "")
-DOMAIN=$(echo "$REGISTER_INFO" | grep -oE "sip:[^@]+@([^ ]+)" | head -1 | cut -d'@' -f2 | cut -d' ' -f1 || echo "")
+if [ -n "$REGISTER_LINES" ]; then
+  echo ""
+  echo "Recent REGISTER-related log entries:"
+  echo "-------------------------------------------"
+  echo "$REGISTER_LINES" | head -5
+  echo "-------------------------------------------"
+  echo ""
+fi
+
+# Try multiple extraction patterns
+REGISTER_INFO=$(echo "$REGISTER_LINES" | grep -i "register" | tail -1 || echo "")
+
+# Extract username - try multiple patterns
+USERNAME=""
+if [ -n "$REGISTER_INFO" ]; then
+  # Pattern 1: From: "username" <sip:...>
+  USERNAME=$(echo "$REGISTER_INFO" | grep -oE 'From: "([^"]+)"' | sed 's/From: "//' | sed 's/"//' | head -1)
+  
+  # Pattern 2: REGISTER sip:username@domain
+  if [ -z "$USERNAME" ]; then
+    USERNAME=$(echo "$REGISTER_INFO" | grep -oE 'REGISTER sip:([^@]+)@' | sed 's/REGISTER sip://' | cut -d'@' -f1)
+  fi
+  
+  # Pattern 3: username@domain in To or From header
+  if [ -z "$USERNAME" ]; then
+    USERNAME=$(echo "$REGISTER_INFO" | grep -oE '[Tt]o:.*<sip:([^@]+)@' | sed 's/.*<sip://' | cut -d'@' -f1)
+  fi
+  
+  # Pattern 4: Any sip:username@ pattern
+  if [ -z "$USERNAME" ]; then
+    USERNAME=$(echo "$REGISTER_INFO" | grep -oE 'sip:([^@/:]+)@' | sed 's/sip://' | sed 's/@//' | head -1)
+  fi
+fi
+
+# Extract domain - try multiple patterns
+DOMAIN=""
+if [ -n "$REGISTER_INFO" ]; then
+  # Pattern 1: sip:username@domain
+  DOMAIN=$(echo "$REGISTER_INFO" | grep -oE 'sip:[^@]+@([^:;>\s]+)' | head -1 | cut -d'@' -f2 | cut -d':' -f1 | cut -d';' -f1)
+  
+  # Pattern 2: Contact: <sip:...@domain>
+  if [ -z "$DOMAIN" ]; then
+    DOMAIN=$(echo "$REGISTER_INFO" | grep -oE '[Cc]ontact:.*<sip:[^@]+@([^:;>\s]+)' | sed 's/.*@//' | cut -d':' -f1 | cut -d';' -f1 | cut -d'>' -f1)
+  fi
+  
+  # Pattern 3: Request-URI domain
+  if [ -z "$DOMAIN" ]; then
+    DOMAIN=$(echo "$REGISTER_INFO" | grep -oE 'REGISTER sip:[^@]+@([^:;>\s]+)' | sed 's/REGISTER sip:[^@]*@//' | cut -d':' -f1 | cut -d';' -f1)
+  fi
+fi
 
 if [ -z "$USERNAME" ] || [ -z "$DOMAIN" ]; then
-  echo "⚠️  Could not extract username/domain from logs"
+  echo "⚠️  Could not automatically extract username/domain from logs"
   echo ""
-  echo "Please provide:"
+  if [ -n "$REGISTER_LINES" ]; then
+    echo "Please review the log entries above and provide:"
+  else
+    echo "No REGISTER requests found. Please provide:"
+  fi
+  echo ""
   read -p "Username (e.g., 5001): " USERNAME
   read -p "Domain (e.g., 15.207.113.122 or graineone.sip.graine.ai): " DOMAIN
 fi
