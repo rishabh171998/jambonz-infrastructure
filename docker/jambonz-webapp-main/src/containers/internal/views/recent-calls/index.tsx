@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ButtonGroup, H1, M, MS } from "@jambonz/ui-kit";
 import dayjs from "dayjs";
 
@@ -56,7 +56,7 @@ export const RecentCalls = () => {
   const [perPageFilter, setPerPageFilter] = useState("25");
   const [maxPageNumber, setMaxPageNumber] = useState(1);
 
-  const [calls, setCalls] = useState<RecentCall[]>();
+  const [calls, setCalls] = useState<RecentCall[]>([]);
   const [callsTotal, setCallsTotal] = useState(0);
 
   const handleFilterChange = () => {
@@ -78,9 +78,17 @@ export const RecentCalls = () => {
 
     getRecentCalls(accountSid, payload)
       .then(({ json }) => {
-        setCalls(json.data);
-        setCallsTotal(json.total);
-        setMaxPageNumber(Math.ceil(json.total / Number(perPageFilter)));
+        // Handle API response format variations and ensure data exists
+        if (json && json.data && Array.isArray(json.data)) {
+          setCalls(json.data);
+          setCallsTotal(json.total || 0);
+          setMaxPageNumber(Math.ceil((json.total || 0) / Number(perPageFilter)));
+        } else {
+          console.warn("Invalid API response format:", json);
+          setCalls([]);
+          setCallsTotal(0);
+          setMaxPageNumber(1);
+        }
       })
       .catch((error) => {
         toastError(error.msg);
@@ -88,7 +96,7 @@ export const RecentCalls = () => {
       });
   };
 
-  useMemo(() => {
+  useEffect(() => {
     setAccountSid(getAccountFilter() || accountSid);
     if (!accountSid && user?.account_sid) setAccountSid(user?.account_sid);
     if (getQueryFilter()) {
@@ -97,7 +105,7 @@ export const RecentCalls = () => {
       setDirectionFilter(direction);
       setStatusFilter(status);
     }
-  }, [accountSid, pageNumber]);
+  }, [accountSid, pageNumber, user?.account_sid]);
 
   useEffect(() => {
     setLocation();
@@ -159,13 +167,13 @@ export const RecentCalls = () => {
           delay={1000}
         />
       </section>
-      <Section {...(hasLength(calls) && { slim: true })}>
+      <Section {...(hasLength(calls) ? { slim: true } : {})}>
         <div className="list">
           {!hasValue(calls) && hasLength(accounts) ? (
             <Spinner />
           ) : hasLength(calls) ? (
             //call.call_sid is null incase of failure, cannot be used as key
-            calls.map((call) => (
+            (calls as RecentCall[]).map((call) => (
               <DetailsItem key={call.sip_callid} call={call} />
             ))
           ) : (
