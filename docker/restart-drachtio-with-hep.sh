@@ -13,14 +13,17 @@ echo ""
 echo "1. Checking heplify-server IP..."
 echo "-------------------------------------------"
 HEPLIFY_IP=$(grep -A 5 "heplify-server:" docker-compose.yaml | grep "ipv4_address" | awk '{print $2}' || echo "172.10.0.41")
+if [ -z "$HEPLIFY_IP" ] || [ "$HEPLIFY_IP" = "" ]; then
+  HEPLIFY_IP="172.10.0.41"
+fi
 echo "heplify-server IP: $HEPLIFY_IP"
 echo ""
 
 echo "2. Verifying drachtio-entrypoint.sh has HEP config..."
 echo "-------------------------------------------"
-if grep -q "--homer" ./sbc/drachtio-entrypoint.sh; then
+if grep -q "homer" ./sbc/drachtio-entrypoint.sh; then
   echo "✅ HEP export is configured in drachtio-entrypoint.sh"
-  grep "--homer" ./sbc/drachtio-entrypoint.sh
+  grep "homer" ./sbc/drachtio-entrypoint.sh
 else
   echo "❌ HEP export not found in drachtio-entrypoint.sh"
   echo "   Please add: --homer \"$HEPLIFY_IP:9060\" --homer-id \"10\""

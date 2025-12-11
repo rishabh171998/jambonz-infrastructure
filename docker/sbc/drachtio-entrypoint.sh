@@ -22,6 +22,7 @@ echo "drachtio-sbc: Using HOST_IP=${HOST_IP} for external-ip"
 
 # Build drachtio command with local IP for contact and public IP for external-ip
 # This matches the proven Packer configuration
+
 # Note: TLS is omitted as it requires certificates and the public IP binding fails in Docker
 # Add HEP export to send SIP traffic to heplify-server for PCAP capture
 exec drachtio \
