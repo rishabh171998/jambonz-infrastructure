@@ -18,8 +18,9 @@ export const PcapButton = ({ call }: PcapButtonProps) => {
   useEffect(() => {
     if (!pcap && !loading && !error) {
       setLoading(true);
-      // API expects call_sid (UUID), not sip_callid
-      const callId = call.call_sid;
+      // Homer stores calls by SIP Call-ID, not call_sid
+      // The API endpoint accepts sip_callid which Homer uses to look up the call
+      const callId = call.sip_callid || call.call_sid;
       
       if (!callId) {
         setError("No call ID available");
